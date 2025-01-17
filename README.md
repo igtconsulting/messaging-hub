@@ -19,6 +19,7 @@ Messaging Hub helps IBM webMethods users optimize their workflow and reduce manu
 ## Prerequisites
 
 To use Messaging Hub, you must download and install the WxCreate package. This package provides essential functionality required for Messaging Hub to operate correctly.
+Currently only WebMethods >= 11 is supported because of the streaming services added in version 11, we may add support for older versions in the future.
 
 To download package use official link - https://github.com/SoftwareAG/webmethods-integrationserver-wxgenerate
 
