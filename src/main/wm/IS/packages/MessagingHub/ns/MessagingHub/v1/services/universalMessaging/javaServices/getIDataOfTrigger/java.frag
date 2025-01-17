@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Values version="2.0">
+  <value name="name">getIDataOfTrigger</value>
+  <value name="encodeutf8">true</value>
+  <value name="body">SURhdGFDdXJzb3IgcGlwZWxpbmVDdXJzb3IgPSBwaXBlbGluZS5nZXRDdXJzb3IoKTsJDQoNClN0
+cmluZyB0cmlnZ2VyTmFtZSA9IElEYXRhVXRpbC5nZXRTdHJpbmcoIHBpcGVsaW5lQ3Vyc29yLCAi
+dHJpZ2dlck5hbWUiICk7DQoNCg0KSURhdGEgaW50ZXJtZWRpYXRlRG9jID0gSURhdGFGYWN0b3J5
+LmNyZWF0ZSgpOw0KSURhdGFDdXJzb3IgaW50ZXJtZWRpYXRlQ3Vyc29yID0gaW50ZXJtZWRpYXRl
+RG9jLmdldEN1cnNvcigpOw0KDQpOYW1lc3BhY2UgbnMgPSBOYW1lc3BhY2UuY3VycmVudCgpOw0K
+TlNOYW1lIG5zTmFtZSA9IE5TTmFtZS5jcmVhdGUodHJpZ2dlck5hbWUpOw0KTlNOb2RlIG5zTm9k
+ZSA9IG5zLmdldE5vZGUobnNOYW1lKTsNCg0KSURhdGFVdGlsLnB1dCggaW50ZXJtZWRpYXRlQ3Vy
+c29yLCAidHJpZ2dlcklEYXRhIiwgbnNOb2RlLmdldEFzRGF0YSgpKTsNCg0KaW50ZXJtZWRpYXRl
+Q3Vyc29yLmRlc3Ryb3koKTsNCklEYXRhVXRpbC5wdXQocGlwZWxpbmVDdXJzb3IsICJ0cmlnZ2Vy
+SW5mbyIsIGludGVybWVkaWF0ZURvYyk7DQpwaXBlbGluZUN1cnNvci5kZXN0cm95KCk7DQoJ</value>
+</Values>

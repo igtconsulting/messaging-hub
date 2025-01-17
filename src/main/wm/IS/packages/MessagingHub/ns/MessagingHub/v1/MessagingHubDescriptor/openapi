@@ -1,0 +1,2014 @@
+openapi: 3.0.2
+info:
+  title: MessagingHub
+  description: API exposing messaging operations over UniversalMessaging and Integration
+    Server
+  contact:
+    name: Michal Jan?ek
+    email: michal.jancek@igtconsulting.eu
+  license:
+    name: GNU AGPLv3
+    url: https://www.gnu.org/licenses/agpl.txt
+  version: 1.0.0
+servers:
+- url: http://igtunix2.igtconsulting.eu:5555/messaging
+  description: ""
+paths:
+  /connections:
+    summary: Path used to manage the list of connections.
+    description: "The REST endpoint/path used to list and create zero or more `connection`\
+      \ entities.  This path contains a `GET` and `POST` operation to perform the\
+      \ list and create tasks, respectively."
+    get:
+      summary: List All connections
+      description: Gets a list of all `connection` entities.
+      operationId: getConnections
+      responses:
+        "200":
+          description: Successful response - returns an array of `connection` entities.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/connection'
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "500":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+    post:
+      summary: Create a connection
+      description: Creates a new instance of a `connection`.
+      operationId: createConnection
+      requestBody:
+        description: A new `connection` to be created.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/connection'
+        required: true
+      responses:
+        "201":
+          description: Successful response.
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "500":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+  /connections/{connectionName}:
+    summary: Path used to manage a single connection.
+    description: "The REST endpoint/path used to get, update, and delete single instances\
+      \ of an `connection`.  This path contains `GET`, `PUT`, and `DELETE` operations\
+      \ used to perform the get, update, and delete tasks, respectively."
+    get:
+      summary: Get a connection
+      description: Gets the details of a single instance of a `connection`.
+      operationId: getConnection
+      parameters:
+      - name: connectionName
+        in: path
+        description: A unique identifier for a `connection`.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Successful response - returns a single `connection`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connection'
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "500":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+    put:
+      summary: Update a connection
+      description: Updates an existing `connection`.
+      operationId: updateConnection
+      parameters:
+      - name: connectionName
+        in: path
+        description: A unique identifier for a `connection`.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        description: Updated `connection` information.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/connection'
+        required: true
+      responses:
+        "202":
+          description: Successful response.
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "500":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+    delete:
+      summary: Delete a connection
+      description: Deletes an existing `connection`.
+      operationId: deleteConnection
+      parameters:
+      - name: connectionName
+        in: path
+        description: A unique identifier for a `connection`.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "204":
+          description: Successful response.
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "500":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+  /{connectionName}/topics:
+    summary: Path used to manage the list of topics.
+    description: "The REST endpoint/path used to list and create zero or more `topic`\
+      \ entities.  This path contains a `GET` and `POST` operation to perform the\
+      \ list and create tasks, respectively."
+    get:
+      summary: List All topics
+      description: Gets a list of all `topic` entities.
+      operationId: getTopics
+      parameters:
+      - name: connectionName
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Successful response - returns an array of `topic` entities.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/topic'
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "500":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+    post:
+      summary: Create a topic
+      description: Creates a new instance of a `topic`.
+      operationId: createTopic
+      parameters:
+      - name: connectionName
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        description: A new `topic` to be created.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/topic'
+        required: true
+      responses:
+        "201":
+          description: Successful response.
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "500":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+  /{connectionName}/topics/{topicName}:
+    summary: Path used to manage a single topic.
+    description: "The REST endpoint/path used to get, update, and delete single instances\
+      \ of an `topic`.  This path contains `GET`, `PUT`, and `DELETE` operations used\
+      \ to perform the get, update, and delete tasks, respectively."
+    get:
+      summary: Get a topic
+      description: Gets the details of a single instance of a `topic`.
+      operationId: getTopic
+      parameters:
+      - name: connectionName
+        in: path
+        description: A unique identifier for a `topic`.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: topicName
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Successful response - returns a single `topic`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/topic'
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "500":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+    put:
+      summary: Update a topic
+      description: Updates an existing `topic`.
+      operationId: updateTopic
+      parameters:
+      - name: connectionName
+        in: path
+        description: A unique identifier for a `topic`.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: topicName
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        description: Updated `topic` information.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/topic'
+        required: true
+      responses:
+        "202":
+          description: Successful response.
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "500":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+    post:
+      summary: Publish message to topic.
+      description: Publish message to existing `topic`.
+      operationId: publishMessageToTopic
+      parameters:
+      - name: connectionName
+        in: path
+        description: A unique identifier for a `topic`.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: topicName
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/publishMessageRequest'
+        required: true
+      responses:
+        "200":
+          description: Successful response - piblished message to `topic`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/publishMessageResponse'
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "500":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+    delete:
+      summary: Delete a topic
+      description: Deletes an existing `topic`.
+      operationId: deleteTopic
+      parameters:
+      - name: connectionName
+        in: path
+        description: A unique identifier for a `topic`.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: topicName
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "204":
+          description: Successful response.
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "500":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+  /{connectionName}/health:
+    summary: Path used to get `connectionName` health information.
+    description: "The REST endpoint/path used to get `connection` health information.\
+      \  This path contains a `GET` operation to perform the list and create tasks,\
+      \ respectively."
+    get:
+      summary: Get health information
+      description: Gets a healt information of `connection` entities.
+      operationId: getHealth
+      parameters:
+      - name: connectionName
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Successful response - returns an list of `connection` health
+            information.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/health'
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "500":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+  /{connectionName}/{topicName}/durables:
+    summary: Path used to manage the list of durables.
+    description: "The REST endpoint/path used to list and create zero or more `durable`\
+      \ entities.  This path contains a `GET` and `POST` operation to perform the\
+      \ list and create tasks, respectively."
+    get:
+      summary: List All durables
+      description: Gets a list of all `durable` entities.
+      operationId: getDurables
+      parameters:
+      - name: connectionName
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: topicName
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Successful response - returns an array of `durable` entities.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/durable'
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "500":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+    post:
+      summary: Create a durable
+      description: Creates a new instance of a `durable`.
+      operationId: createDurable
+      parameters:
+      - name: connectionName
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: topicName
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        description: A new `durable` to be created.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/durable'
+        required: true
+      responses:
+        "201":
+          description: Successful response.
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "500":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+  /{connectionName}/{topicName}/durables/{durableName}:
+    summary: Path used to manage a single durable.
+    description: "The REST endpoint/path used to get, update, and delete single instances\
+      \ of an `durable`.  This path contains `GET`, `PUT`, and `DELETE` operations\
+      \ used to perform the get, update, and delete tasks, respectively."
+    get:
+      summary: Get a durable
+      description: Gets the details of a single instance of a `durable`.
+      operationId: getDurable
+      parameters:
+      - name: connectionName
+        in: path
+        description: A unique identifier for a `durable`.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: topicName
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: durableName
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Successful response - returns a single `durable`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/durable'
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "500":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+    put:
+      summary: Update a durable
+      description: Updates an existing `durable`.
+      operationId: updateDurable
+      parameters:
+      - name: connectionName
+        in: path
+        description: A unique identifier for a `durable`.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: topicName
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: durableName
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        description: Updated `durable` information.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/durable'
+        required: true
+      responses:
+        "202":
+          description: Successful response.
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "500":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+    delete:
+      summary: Delete a durable
+      description: Deletes an existing `durable`.
+      operationId: deleteDurable
+      parameters:
+      - name: connectionName
+        in: path
+        description: A unique identifier for a `durable`.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: topicName
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: durableName
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "204":
+          description: Successful response.
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "500":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+  /{connectionName}/{topicName}/durables/{durableName}/consume:
+    summary: Path used to manage consuming a message from durable.
+    description: "The REST endpoint/path used to get message from `durable`.  This\
+      \ path contains `GET` operations used to perform the get tasks, respectively."
+    get:
+      summary: Get a message from durable
+      description: Consume a message from `durable`.
+      operationId: consumeMessageFromDurable
+      parameters:
+      - name: connectionName
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: topicName
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: durableName
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Successful response - returns a message from `durable`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/consumeMessageResponse'
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "500":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+  /interfaces:
+    summary: Path used to manage the list of interfaces.
+    description: "The REST endpoint/path used to list and create zero or more `interface`\
+      \ entities.  This path contains a `GET` and `POST` operation to perform the\
+      \ list and create tasks, respectively."
+    get:
+      summary: List All interfaces
+      description: Gets a list of all `interface` entities.
+      operationId: getInterfaces
+      responses:
+        "200":
+          description: Successful response - returns an array of `interface` entities.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/interface'
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "500":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+    post:
+      summary: Create a interface
+      description: Creates a new instance of a `interface`.
+      operationId: createInterface
+      requestBody:
+        description: A new `interface` to be created.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/interface'
+        required: true
+      responses:
+        "201":
+          description: Successful response.
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "500":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+  /interfaces/{env}/{interfaceName}:
+    summary: Path used to manage a single interface.
+    description: "The REST endpoint/path used to get, update, and delete single instances\
+      \ of an `interface`.  This path contains `GET`, `PUT`, and `DELETE` operations\
+      \ used to perform the get, update, and delete tasks, respectively."
+    get:
+      summary: Get a interface
+      description: Gets the details of a single instance of a `interface`.
+      operationId: getEnvInterface
+      parameters:
+      - name: interfaceName
+        in: path
+        description: Interface name.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: env
+        in: path
+        description: Environment name.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Successful response - returns a single `interface`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/interface'
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "500":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+    put:
+      summary: Update a interface
+      description: Updates an existing `interface`.
+      operationId: updateEnvInterface
+      parameters:
+      - name: interfaceName
+        in: path
+        description: Interface name.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: env
+        in: path
+        description: Environment name.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        description: Updated `interface` information.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/interface'
+        required: true
+      responses:
+        "202":
+          description: Successful response.
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "500":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+    delete:
+      summary: Delete a interface
+      description: Deletes an existing `interface`.
+      operationId: deleteEnvInterface
+      parameters:
+      - name: interfaceName
+        in: path
+        description: Interface name.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: env
+        in: path
+        description: Environment name.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "204":
+          description: Successful response.
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "500":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+  /topics:
+    summary: Path used to manage the list of topics.
+    description: "The REST endpoint/path used to list and create zero or more `topic`\
+      \ entities.  This path contains a `GET` and `POST` operation to perform the\
+      \ list and create tasks, respectively."
+    get:
+      summary: List All topics
+      description: Gets a list of all `topic` entities.
+      operationId: getAllTopics
+      responses:
+        "200":
+          description: Successful response - returns an array of `topic` entities.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/topic'
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "500":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+  /{connectionName}/topics/{topicName}/detail:
+    summary: Path used to manage topic detail.
+    description: The REST endpoint/path used to get `topic` details.  This path contains
+      a `GET` operation to perform the get topic details of prometheus isn't provided.
+    get:
+      summary: Get topic detail.
+      description: Get total published and consumed messages in topic.
+      operationId: getTopicDetail
+      parameters:
+      - name: connectionName
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: topicName
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/getTopicDetail'
+        "500":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+  /interfaces/{interfaceName}/:
+    summary: Path used to manage a single interface.
+    description: "The REST endpoint/path used to get, update, and delete single instances\
+      \ of an `interface`.  This path contains `GET`, `PUT`, and `DELETE` operations\
+      \ used to perform the get, update, and delete tasks, respectively."
+    get:
+      summary: Get a interface
+      description: Gets the details of a single instance of a `interface`.
+      operationId: getInterface
+      parameters:
+      - name: interfaceName
+        in: path
+        description: Interface name.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Successful response - returns a single `interface`.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/interface'
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "500":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+    put:
+      summary: Update a interface
+      description: Updates an existing `interface`.
+      operationId: updateInterface
+      parameters:
+      - name: interfaceName
+        in: path
+        description: Interface name.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      requestBody:
+        description: Updated `interface` information.
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/interface'
+        required: true
+      responses:
+        "202":
+          description: Successful response.
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "500":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+    delete:
+      summary: Delete a interface
+      description: Deletes an existing `interface`.
+      operationId: deleteInterface
+      parameters:
+      - name: interfaceName
+        in: path
+        description: Interface name.
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "204":
+          description: Successful response.
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "500":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+  /{connectionName}/{topicName}/durables/{durableName}/purge:
+    description: Purge events for given topic durable.
+    delete:
+      operationId: purgeTopicDurable
+      parameters:
+      - name: connectionName
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: topicName
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: durableName
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Purge events for given topic durable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/genericResponse'
+        "500":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+  /packages:
+    summary: Path used to list all packages.
+    description: "The REST endpoint/path used to list all packages.  This path contains\
+      \ a `GET` operation to perform the list of all packages, respectively."
+    get:
+      summary: List all packages.
+      description: Gets a list of all `package` entities.
+      operationId: getAllPackages
+      responses:
+        "200":
+          description: Successful response - returns an array of `topic` entities.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/package'
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "500":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+  /interfaces/{env}/{interfaceName}/getPipeline:
+    summary: Path used to get last message from interface.
+    description: "The REST endpoint/path used to get last message of an `interface`.\
+      \  This path contains `GET` operation used to perform the get tasks, respectively."
+    get:
+      summary: Get last message from interface.
+      description: Get last message from instance `interface`.
+      operationId: getInterfacePipeline
+      parameters:
+      - name: interfaceName
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      - name: env
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: string
+      responses:
+        "200":
+          description: Successful response - returns a singlemessage from `interface`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/pipeline'
+        "400":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+        "500":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/error'
+components:
+  schemas:
+    topic:
+      title: Root Type for topic
+      type: object
+      properties:
+        topicName:
+          type: string
+        packageName:
+          type: string
+        schema:
+          type: string
+        connectionType:
+          type: string
+          description: ""
+      description: ""
+      example: |-
+        {
+            "topicName": "asd",
+            "packageName": "asd",
+            "schema": "asd",
+            "connectionType": "UM",
+        }
+    connection:
+      title: Root Type for connection
+      type: object
+      properties:
+        connection_name:
+          type: string
+        connection_type:
+          type: string
+        is_resource_name:
+          type: string
+        prometheus_url:
+          type: string
+        global_prefix:
+          type: string
+          description: ""
+      description: ""
+      example:
+        connection_name: sample
+        connection_type: sample
+        is_resource_name: sample
+        prometheus_url: sample
+        global_prefix: sample
+    durable:
+      title: Root Type for durable
+      type: object
+      properties:
+        durableName:
+          type: string
+        durableType:
+          type: string
+        durableSelector:
+          type: string
+        processingStatus:
+          type: string
+        retrievalStatus:
+          type: string
+      description: ""
+      example:
+        durableName: asd
+        durableType: asd
+        durableSelector: asd
+        processingStatus: asd
+        retrievalStatus: asd
+    health:
+      title: Root Type for health
+      type: object
+      properties:
+        data:
+          type: string
+      description: ""
+      example:
+        data: asd
+    publishMessageRequest:
+      title: Root Type for publishMessageRequest
+      type: object
+      properties:
+        jsonStream:
+          type: string
+      description: ""
+      example:
+        jsonStream: asd
+    publishMessageResponse:
+      title: Root Type for publishMessage_Response
+      type: object
+      properties:
+        docid:
+          type: string
+        message:
+          type: string
+        status:
+          type: string
+      description: ""
+      example:
+        docid: asd
+        message: asd
+        status: asd
+    consumeMessageResponse:
+      title: Root Type for consumeMessageResponse
+      type: object
+      properties:
+        message:
+          type: string
+        messageContent:
+          type: string
+        status:
+          type: string
+      description: ""
+      example:
+        message: asd
+        messageContent: asd
+        status: asd
+    error:
+      title: Root Type for error
+      type: object
+      properties:
+        message:
+          type: string
+        status:
+          type: string
+        errorMessage:
+          type: string
+      description: ""
+      example:
+        message: asd
+        status: asd
+        errorMessage: asd
+    interface:
+      title: Root Type for interface
+      required:
+      - delivery_method
+      - environment
+      - interface_name
+      - interface_type
+      - message_filter
+      - messaging_hub_forwarding
+      - package_name
+      - source_topic
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        genericDeliveryConfig:
+          type: array
+          items:
+            $ref: '#/components/schemas/interfaceCustomDeliveryConfig'
+        environment:
+          type: string
+          description: ""
+        package_name:
+          type: string
+          description: ""
+        id_interface:
+          type: string
+          description: ""
+        custom_service_name:
+          type: string
+        delivery_method:
+          type: string
+          enum:
+          - generic
+          - customService
+        interface_name:
+          type: string
+        source_topic:
+          type: string
+        message_filter:
+          type: string
+        um_connection:
+          type: string
+          description: ""
+        global_prefix:
+          type: string
+          description: ""
+        trigger_execution_user:
+          type: string
+          description: ""
+        interface_type:
+          type: string
+          description: ""
+        messaging_hub_forwarding:
+          type: string
+          description: ""
+      description: ""
+      example:
+        id_interface: "2"
+        interface_name: sampleName
+        interface_type: KAFKA_CONSUMER
+        environment: DEV|TEST|PROD
+        enabled: true
+        source_topic: sampleTopic
+        message_filter: field = jozko and feild2 = jozko2
+        delivery_method: generic|customService
+        custom_service_name: fully qualified path to service
+        package_name: MessagingHub
+        um_connection: IS_UM_CONNECTION
+        global_prefix: umfw_igt_connection
+        messaging_hub_forwarding: "true"
+        trigger_execution_user: Administrator
+        genericDeliveryConfig:
+        - delivery_endpoint: https://jozko.com/dajmidata
+          delivery_format: application/json|application/xml|text/xml
+          exclude_fields: field1|document1.field2
+          auth:
+            auth_type: None|Basic|Bearer
+            auth_user_name: basic user name
+            auth_password: basic pass
+            auth_token_service: fully qualified path to service that returns token
+    interfaceCustomDeliveryConfig:
+      title: Root Type for interfaceCustomDeliveryConfig
+      type: object
+      properties:
+        auth:
+          $ref: '#/components/schemas/interfaceCustomDeliveryConfigAuth'
+        delivery_endpoint:
+          type: string
+        delivery_format:
+          type: string
+        exclude_fields:
+          type: string
+      description: ""
+      example:
+        deliveryEndpoint: https://jozko.com/dajmidata
+        deliveryFormat: application/json|application/xml|text/xml
+        excludeFields: field1|document1.field2
+        auth:
+          type: None|Basic|Bearer
+          userName: basic user name
+          password: basic pass
+          tokenService: fully qualified path to service that returns token
+    interfaceCustomDeliveryConfigAuth:
+      title: Root Type for interfaceCustomDeliveryConfigAuth
+      required:
+      - auth_type
+      type: object
+      properties:
+        auth_type:
+          type: string
+          enum:
+          - None
+          - Basic
+          - Bearer
+        auth_user_name:
+          type: string
+        auth_password:
+          type: string
+        auth_token_service:
+          type: string
+      description: ""
+      example:
+        type: None|Basic|Bearer
+        userName: basic user name
+        password: basic pass
+        tokenService: fully qualified path to service that returns token
+    getTopicDetail:
+      title: Root Type for getTopicDetail
+      required:
+      - data
+      type: object
+      properties:
+        data:
+          type: string
+          description: ""
+      description: ""
+      example:
+        data: asdasd
+    genericResponse:
+      title: Root Type for genericResponse
+      type: object
+      properties:
+        message:
+          type: string
+      description: ""
+      example:
+        message: ok
+    package:
+      title: Root Type for package
+      type: object
+      properties:
+        name:
+          type: string
+      description: ""
+      example:
+        name: asd
+    pipeline:
+      title: Root Type for pipeline
+      type: object
+      properties:
+        pipelineJSONString:
+          type: string
+      description: ""
+      example:
+        pipelineJSONString: asdasdas
+  responses:
+    errorResponse:
+      description: ""
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/error'
+    getTopicDetailResponse:
+      description: ""
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/getTopicDetail'

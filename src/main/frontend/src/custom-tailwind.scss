@@ -1,0 +1,86 @@
+$sideBarOpenedWidth: 240px;
+
+* {
+  box-sizing: border-box;
+}
+
+@media screen and (min-width: '1024px') {
+  .openedBar {
+    margin-left: $sideBarOpenedWidth;
+    width: calc(100% - $sideBarOpenedWidth);
+  }
+
+  .linkTextAnimation {
+    animation: showAfter 0.15s ease-in;
+  }
+
+  .openedDrawer {
+    width: $sideBarOpenedWidth;
+  }
+  
+  .navCloser {
+    width: $sideBarOpenedWidth;
+  }
+  
+}
+
+.linkText {
+  margin-left: 12px;
+}
+
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100px; /* Adjust the height as needed */
+}
+
+.loadingSpinner {
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top: 4px solid black; /* Set the color you want for the spinner */
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite; /* Adjust animation duration as needed */
+}
+
+@keyframes showAfter {
+  0% {
+    display: none;
+  }
+  80% {
+    display: none;
+    opacity: 0;
+  }
+  100% {
+    display: block;
+    opacity: 1;
+  }
+}
+
+@keyframes slideInFromBottomLeft {
+  0% {
+    transform: translate(0, 0) scale(0);
+    opacity: 0;
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+}
+
+.clicked {
+  animation: clickedElement 300ms none;
+}
+
+@keyframes clickedElement {
+  0% {
+    background-color: rgb(229 231 235);
+  }
+  50% {
+    background-color: rgb(209 213 219);
+  }
+  100% {
+    background-color: rgb(229 231 235);
+  }
+}

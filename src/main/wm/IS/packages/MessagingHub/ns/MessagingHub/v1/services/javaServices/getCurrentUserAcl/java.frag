@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Values version="2.0">
+  <value name="name">getCurrentUserAcl</value>
+  <value name="encodeutf8">true</value>
+  <value name="body">SURhdGFDdXJzb3IgcGlwZWxpbmVDdXJzb3IgPSBwaXBlbGluZS5nZXRDdXJzb3IoKTsNClN0cmlu
+Zwlkb2N1bWVudFR5cGUgPSBJRGF0YVV0aWwuZ2V0U3RyaW5nKCBwaXBlbGluZUN1cnNvciwgImRv
+Y3VtZW50VHlwZSIpOw0KDQpJRGF0YVV0aWwucHV0KHBpcGVsaW5lQ3Vyc29yLCAibGlzdEFDTCIs
+IFN0cmluZy52YWx1ZU9mKEFDTE1hbmFnZXIuYnJvd3NlQWNsKGRvY3VtZW50VHlwZSkpKTsNCklE
+YXRhVXRpbC5wdXQocGlwZWxpbmVDdXJzb3IsICJyZWFkQUNMIiwgU3RyaW5nLnZhbHVlT2YoQUNM
+TWFuYWdlci5yZWFkQWNsKGRvY3VtZW50VHlwZSkpKTsNCklEYXRhVXRpbC5wdXQocGlwZWxpbmVD
+dXJzb3IsICJ3cml0ZUFDTCIsIFN0cmluZy52YWx1ZU9mKEFDTE1hbmFnZXIud3JpdGVBY2woZG9j
+dW1lbnRUeXBlKSkpOw0KSURhdGFVdGlsLnB1dChwaXBlbGluZUN1cnNvciwgImV4ZWN1dGVBQ0wi
+LCBTdHJpbmcudmFsdWVPZihBQ0xNYW5hZ2VyLmV4ZWN1dGVBY2woZG9jdW1lbnRUeXBlKSkpOw0K
+DQpwaXBlbGluZUN1cnNvci5kZXN0cm95KCk7DQoJ</value>
+</Values>

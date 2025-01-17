@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Values version="2.0">
+  <value name="name">genericServiceInvoke</value>
+  <value name="encodeutf8">true</value>
+  <value name="body">dHJ5IHsNCglJRGF0YUN1cnNvciBwaXBlbGluZUN1cnNvciA9IHBpcGVsaW5lLmdldEN1cnNvcigp
+OwkJCQ0KCVN0cmluZyBzZXJ2aWNlTmFtZSA9IElEYXRhVXRpbC5nZXRTdHJpbmcoIHBpcGVsaW5l
+Q3Vyc29yLCAic2VydmljZU5hbWUiICk7DQoJSURhdGEgaW5wdXREb2N1bWVudCA9IElEYXRhVXRp
+bC5nZXRJRGF0YShwaXBlbGluZUN1cnNvciwgImlucHV0RG9jdW1lbnQiKTsNCgkNCglTZXJ2aWNl
+LmRvSW52b2tlKHNlcnZpY2VOYW1lLnNwbGl0KCI6IilbMF0sIHNlcnZpY2VOYW1lLnNwbGl0KCI6
+IilbMV0sIGlucHV0RG9jdW1lbnQpOw0KCQ0KCUlEYXRhVXRpbC5wdXQocGlwZWxpbmVDdXJzb3Is
+ICJ0cmlnZ2VySW5mbyIsIGlucHV0RG9jdW1lbnQpOw0KCXBpcGVsaW5lQ3Vyc29yLmRlc3Ryb3ko
+KTsNCn0gY2F0Y2ggKEV4Y2VwdGlvbiBlKSB7DQoJLy8gVE9ETyBBdXRvLWdlbmVyYXRlZCBjYXRj
+aCBibG9jaw0KCWUucHJpbnRTdGFja1RyYWNlKCk7DQp9</value>
+</Values>

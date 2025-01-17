@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Values version="2.0">
+  <value name="name">getAllTopics</value>
+  <value name="encodeutf8">true</value>
+  <value name="body">SURhdGFDdXJzb3IgcGlwZWxpbmVDdXJzb3IgPSBwaXBlbGluZS5nZXRDdXJzb3IoKTsNCg0KTmFt
+ZXNwYWNlIG5zID0gTmFtZXNwYWNlLmN1cnJlbnQoKTsNClN0cmluZyBiYXNlTm9kZU5hbWUgPSBJ
+RGF0YVV0aWwuZ2V0U3RyaW5nKCBwaXBlbGluZUN1cnNvciwgInRvcGljTmFtZXNwYWNlUHJlZml4
+Iik7DQpOU05hbWUgdG9waWNOb2RlID0gTlNOYW1lLmNyZWF0ZShiYXNlTm9kZU5hbWUpOw0KDQpp
+Zihucy5ub2RlRXhpc3RzKHRvcGljTm9kZSkpIHsNCglOU05vZGUgYmFzZU5vZGUgPSBucy5nZXRO
+b2RlKGJhc2VOb2RlTmFtZSk7DQoNCglMaXN0PFN0cmluZz4gcmVzdWx0cyA9IGdldENoaWxkTGlz
+dChiYXNlTm9kZSk7DQoNCglJRGF0YVV0aWwucHV0KCBwaXBlbGluZUN1cnNvciwgInRvcGljTGlz
+dCIsIHJlc3VsdHMudG9BcnJheShuZXcgU3RyaW5nWzBdKSk7DQp9DQoNCnBpcGVsaW5lQ3Vyc29y
+LmRlc3Ryb3koKTs=</value>
+</Values>

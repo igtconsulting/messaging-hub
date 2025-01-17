@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Values version="2.0">
+  <value name="shared">CQ==</value>
+  <value name="encodeutf8">true</value>
+  <value name="extends"></value>
+  <array name="implements" type="value" depth="1">
+  </array>
+  <array name="imports" type="value" depth="1">
+    <value>java.net.InetAddress</value>
+    <value>java.net.UnknownHostException</value>
+    <value>com.wm.util.Debug</value>
+    <value>java.io.*</value>
+    <value>java.util.*</value>
+    <value>java.lang.System</value>
+    <value>com.wm.app.b2b.server.*</value>
+    <value>com.wm.util.Table</value>
+    <value>java.text.*</value>
+    <value>com.wm.lang.ns.*</value>
+  </array>
+</Values>

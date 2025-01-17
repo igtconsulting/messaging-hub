@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Values version="2.0">
+  <value name="encodeutf8">true</value>
+  <value name="shared"></value>
+  <value name="extends"></value>
+  <array name="implements" type="value" depth="1">
+  </array>
+  <array name="imports" type="value" depth="1">
+    <value>java.text.DateFormat</value>
+    <value>java.text.ParseException</value>
+    <value>java.text.SimpleDateFormat</value>
+    <value>java.time.Instant</value>
+    <value>java.time.LocalDate</value>
+    <value>java.time.LocalDateTime</value>
+    <value>java.time.ZoneId</value>
+    <value>java.time.ZonedDateTime</value>
+    <value>java.time.format.DateTimeFormatter</value>
+    <value>java.util.Date</value>
+    <value>java.util.regex.*</value>
+  </array>
+</Values>

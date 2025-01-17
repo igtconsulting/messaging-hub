@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Values version="2.0">
+  <value name="name">getAllEventTriggers</value>
+  <value name="encodeutf8">true</value>
+  <value name="body">SURhdGFDdXJzb3IgY3Vyc29yID0gcGlwZWxpbmUuZ2V0Q3Vyc29yKCk7DQpUcmlnZ2VyQ29uZmln
+dXJhdGlvbiB0YyA9IFN0cmVhbWluZ1N1YnN5c3RlbS5nZXRJbnN0YW5jZSgpLmdldFRyaWdnZXJD
+b25maWd1cmF0aW9uKCk7DQpUcmlnZ2VyW10gdHJpZ2dlcnMgPSB0Yy5nZXRUcmlnZ2VycygpOw0K
+DQpJRGF0YVtdIG91dHB1dCA9IG5ldyBJRGF0YVt0cmlnZ2Vycy5sZW5ndGhdOw0KDQpmb3IoaW50
+IGkgPSAwOyBpIDwgdHJpZ2dlcnMubGVuZ3RoOyBpKyspew0Kb3V0cHV0W2ldID0gSURhdGFGYWN0
+b3J5LmNyZWF0ZSgpOw0KSURhdGFDdXJzb3Igc3ViQ3Vyc29yID0gb3V0cHV0W2ldLmdldEN1cnNv
+cigpOw0KSURhdGFVdGlsLnB1dCggc3ViQ3Vyc29yLCAidHJpZ2dlckRldGFpbHMiLCB0cmlnZ2Vy
+c1tpXS5nZXRBc0RhdGEoKSk7DQpzdWJDdXJzb3IuZGVzdHJveSgpOw0KfQ0KDQpJRGF0YVV0aWwu
+cHV0KCBjdXJzb3IsICJ0cmlnZ2VyTGlzdCIsIG91dHB1dCk7DQpjdXJzb3IuZGVzdHJveSgpOw==
+</value>
+</Values>
