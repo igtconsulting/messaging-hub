@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Values version="2.0">
+  <value name="name">getTriggerPathFromDurableName</value>
+  <value name="encodeutf8">true</value>
+  <value name="body">SURhdGFDdXJzb3IgcGlwZWxpbmVDdXJzb3IgPSBwaXBlbGluZS5nZXRDdXJzb3IoKTsNCg0KU3Ry
+aW5nIHRyaWdnZXJEdXJhYmxlTmFtZSA9IElEYXRhVXRpbC5nZXRTdHJpbmcoIHBpcGVsaW5lQ3Vy
+c29yLCAiZHVyYWJsZU5hbWUiKTsNCg0KaWYgKHRyaWdnZXJEdXJhYmxlTmFtZS5jb250YWlucygi
+IyMiKSA9PSB0cnVlKSB7DQoJdHJpZ2dlckR1cmFibGVOYW1lID0gdHJpZ2dlckR1cmFibGVOYW1l
+LnNwbGl0KCIjIyIpWzFdLnJlcGxhY2UoIl9fIiwgIi4iKS5yZXBsYWNlQWxsKCJcXC4oW15cXC5d
+KyQpIiwgIjokMSIpOw0KfWVsc2Ugew0KCXRyaWdnZXJEdXJhYmxlTmFtZSA9ICIiOw0KfQ0KDQpJ
+RGF0YVV0aWwucHV0KCBwaXBlbGluZUN1cnNvciwgInRyaWdnZXJQYXRoIiwgdHJpZ2dlckR1cmFi
+bGVOYW1lKTsNCgk=</value>
+</Values>

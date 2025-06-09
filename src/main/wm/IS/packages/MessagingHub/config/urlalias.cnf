@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Values version="2.0">
+  <record name="messaging" javaclass="com.wm.util.Values">
+    <value name="urlPath">rad/MessagingHub.v1:MessagingHubDescriptor</value>
+    <record name="portMap" javaclass="com.wm.util.Values">
+    </record>
+  </record>
+</Values>

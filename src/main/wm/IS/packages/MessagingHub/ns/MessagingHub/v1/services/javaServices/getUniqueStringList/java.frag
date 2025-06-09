@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Values version="2.0">
+  <value name="name">getUniqueStringList</value>
+  <value name="encodeutf8">true</value>
+  <value name="body">SURhdGFDdXJzb3IgcGlwZWxpbmVDdXJzb3IgPSBwaXBlbGluZS5nZXRDdXJzb3IoKTsNClN0cmlu
+Z1tdIGlucHV0TGlzdCA9IElEYXRhVXRpbC5nZXRTdHJpbmdBcnJheShwaXBlbGluZUN1cnNvciwg
+ImlucHV0TGlzdCIpOw0KDQpBcnJheUxpc3Q8U3RyaW5nPiB1bmlxdWVMaXN0ID0gbmV3IEFycmF5
+TGlzdDw+KCk7DQoNCmZvciAoU3RyaW5nIHN0ciA6IGlucHV0TGlzdCkgew0KICAgIGlmICghdW5p
+cXVlTGlzdC5jb250YWlucyhzdHIpKSB7DQogICAgICAgIHVuaXF1ZUxpc3QuYWRkKHN0cik7DQog
+ICAgfQ0KfQ0KDQpTdHJpbmdbXSB1bmlxdWVBcnJheSA9IHVuaXF1ZUxpc3QudG9BcnJheShuZXcg
+U3RyaW5nWzBdKTsNCklEYXRhVXRpbC5wdXQocGlwZWxpbmVDdXJzb3IsICJ1bmlxdWVMaXN0Iiwg
+dW5pcXVlQXJyYXkpOw0KDQpwaXBlbGluZUN1cnNvci5kZXN0cm95KCk7</value>
+</Values>

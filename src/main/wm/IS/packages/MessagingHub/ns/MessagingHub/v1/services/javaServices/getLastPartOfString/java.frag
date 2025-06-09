@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Values version="2.0">
+  <value name="name">getLastPartOfString</value>
+  <value name="encodeutf8">true</value>
+  <value name="body">SURhdGFDdXJzb3IgcGlwZWxpbmVDdXJzb3IgPSBwaXBlbGluZS5nZXRDdXJzb3IoKTsNCg0KU3Ry
+aW5nIGlucHV0U3RyaW5nID0gSURhdGFVdGlsLmdldFN0cmluZyggcGlwZWxpbmVDdXJzb3IsICJp
+bnB1dCIpOw0KU3RyaW5nIGRlbGltaXRlciA9IElEYXRhVXRpbC5nZXRTdHJpbmcoIHBpcGVsaW5l
+Q3Vyc29yLCAiZGVsaW1pdGVyIik7DQoNCg0KaW50IGxhc3RJbmRleCA9IGlucHV0U3RyaW5nLmxh
+c3RJbmRleE9mKGRlbGltaXRlcik7DQoNCmlmIChsYXN0SW5kZXggIT0gLTEgJiYgbGFzdEluZGV4
+IDwgaW5wdXRTdHJpbmcubGVuZ3RoKCkgLSAxKSB7DQoJSURhdGFVdGlsLnB1dCggcGlwZWxpbmVD
+dXJzb3IsICJsYXN0UGFydE9mU3RyaW5nIiwgaW5wdXRTdHJpbmcuc3Vic3RyaW5nKGxhc3RJbmRl
+eCArIDEpKTsNCn0gZWxzZSB7DQoJSURhdGFVdGlsLnB1dCggcGlwZWxpbmVDdXJzb3IsICJsYXN0
+UGFydE9mU3RyaW5nIiwgaW5wdXRTdHJpbmcuc3Vic3RyaW5nKGxhc3RJbmRleCArIDEpKTsNCn0N
+Cgk=</value>
+</Values>
