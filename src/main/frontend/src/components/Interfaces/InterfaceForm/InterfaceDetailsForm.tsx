@@ -207,11 +207,11 @@ const InterfaceDetailsForm: React.FC<InterfaceFormProps> = ({
   );
 
   useEffect(() => {
-    if (selectedSourceTopic && !interfaceDetails) {
-      // Only auto-set connection for new interfaces, not when editing
+    if (selectedSourceTopic) {
+      // Auto-set connection for both new and edited interfaces when topic changes
       handleTopicChange(selectedSourceTopic);
     }
-  }, [selectedSourceTopic, handleTopicChange, interfaceDetails]);
+  }, [selectedSourceTopic, handleTopicChange]);
 
   // Handle initial setup for new interfaces
   useEffect(() => {
@@ -226,6 +226,24 @@ const InterfaceDetailsForm: React.FC<InterfaceFormProps> = ({
       }
     }
   }, [selectedSourceTopic, topicOptions, interfaceDetails, selectedConnectionName]);
+
+  // Handle initial connection setup when editing interfaces
+  useEffect(() => {
+    if (interfaceDetails && selectedSourceTopic && topicOptions.length > 0 && !connectionDisplayName) {
+      // For editing interfaces, ensure connection display name is properly loaded
+      const selectedConnection = topicOptions.find((group) => {
+        return group.options.some(
+          (option) => option.value === selectedSourceTopic
+        );
+      });
+      if (selectedConnection) {
+        const connectionName = selectedConnection.label;
+        if (connectionName && connectionName !== selectedConnectionName) {
+          setSelectedConnectionName(connectionName);
+        }
+      }
+    }
+  }, [interfaceDetails, selectedSourceTopic, topicOptions, connectionDisplayName, selectedConnectionName]);
 
 
   async function goToDelivery() {
@@ -500,7 +518,7 @@ const InterfaceDetailsForm: React.FC<InterfaceFormProps> = ({
         defaultValue={interfaceDetails ? interfaceDetails.delivery_method : ""}
       />
       <div className="mb-6 flex flex-col gap-2">
-        <label>Messaging hub forwarding</label>
+        <label>Save last message of the interface</label>
         <Toggle
           pressed={() => {
             setMessagingHubFor(!messagingHubFor);
