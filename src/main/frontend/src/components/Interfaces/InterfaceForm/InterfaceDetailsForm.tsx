@@ -207,43 +207,59 @@ const InterfaceDetailsForm: React.FC<InterfaceFormProps> = ({
   );
 
   useEffect(() => {
-    if (selectedSourceTopic) {
-      // Auto-set connection for both new and edited interfaces when topic changes
-      handleTopicChange(selectedSourceTopic);
+    if (selectedSourceTopic && selectedConnectionType) {
+      // Only auto-fill connection when connection type matches the topic type
+      const selectedTopicGroup = topicOptions.find((group) => {
+        return group.options.some((option) => option.value === selectedSourceTopic);
+      });
+      
+      if (selectedTopicGroup && selectedTopicGroup.type === selectedConnectionType) {
+        // Connection type matches topic type, so auto-fill
+        handleTopicChange(selectedSourceTopic);
+      } else {
+        // Connection type doesn't match, clear connection data
+        setSelectedConnectionName("");
+        setConnectionDisplayName("");
+        setGlobalPrefix("");
+      }
     }
-  }, [selectedSourceTopic, handleTopicChange]);
+  }, [selectedSourceTopic, selectedConnectionType, handleTopicChange, topicOptions]);
 
   // Handle initial setup for new interfaces
   useEffect(() => {
-    if (!interfaceDetails && selectedSourceTopic && topicOptions.length > 0) {
+    if (!interfaceDetails && selectedSourceTopic && topicOptions.length > 0 && selectedConnectionType) {
       const selectedConnection = topicOptions.find((group) => {
         return group.options.some(
           (option) => option.value === selectedSourceTopic
         );
       });
-      if (selectedConnection && !selectedConnectionName) {
+      
+      // Only set connection if connection type matches topic type
+      if (selectedConnection && selectedConnection.type === selectedConnectionType && !selectedConnectionName) {
         setSelectedConnectionName(selectedConnection.label);
       }
     }
-  }, [selectedSourceTopic, topicOptions, interfaceDetails, selectedConnectionName]);
+  }, [selectedSourceTopic, topicOptions, interfaceDetails, selectedConnectionName, selectedConnectionType]);
 
   // Handle initial connection setup when editing interfaces
   useEffect(() => {
-    if (interfaceDetails && selectedSourceTopic && topicOptions.length > 0 && !connectionDisplayName) {
+    if (interfaceDetails && selectedSourceTopic && topicOptions.length > 0 && !connectionDisplayName && selectedConnectionType) {
       // For editing interfaces, ensure connection display name is properly loaded
       const selectedConnection = topicOptions.find((group) => {
         return group.options.some(
           (option) => option.value === selectedSourceTopic
         );
       });
-      if (selectedConnection) {
+      
+      // Only set connection if connection type matches topic type
+      if (selectedConnection && selectedConnection.type === selectedConnectionType) {
         const connectionName = selectedConnection.label;
         if (connectionName && connectionName !== selectedConnectionName) {
           setSelectedConnectionName(connectionName);
         }
       }
     }
-  }, [interfaceDetails, selectedSourceTopic, topicOptions, connectionDisplayName, selectedConnectionName]);
+  }, [interfaceDetails, selectedSourceTopic, topicOptions, connectionDisplayName, selectedConnectionName, selectedConnectionType]);
 
 
   async function goToDelivery() {
