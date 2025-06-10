@@ -500,7 +500,7 @@ const TopicDetail = () => {
                   className={`px-4 py-2 ${tab === "tree" ? "font-bold border-b-2 border-green-600" : ""}`}
                   onClick={() => setTab("tree")}
               >
-                Scheme Tree (experimental)
+                Scheme Tree
               </button>
             </div>
 

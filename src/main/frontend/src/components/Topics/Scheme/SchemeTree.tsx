@@ -563,6 +563,12 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
     const children = getChildren(node.id, currentData);
     const isExpanded = expandedNodes.has(node.id);
     const hasChildren = children.length > 0;
+    
+    // Check if this is an array entry (has replicaOf for document arrays or originalKey for string arrays)
+    const isArrayEntry = !!(node.metadata.replicaOf || node.metadata.originalKey !== undefined);
+    
+    // Apply different background color for array entries
+    const bgColor = isArrayEntry ? "bg-cyan-100 border-l-4 border-cyan-500" : "bg-white";
 
     return (
       <div key={node.id} style={{ marginLeft: level * 20 }}>
@@ -576,19 +582,20 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
             />
           </div>
         ) : (
-          <div className="flex items-center justify-between bg-white rounded-md px-3 py-2 my-1">
-            <div 
+          <div className={`flex items-center justify-between ${bgColor} rounded-md px-3 py-2 my-1`}>
+            <div
               className="flex items-center gap-2 flex-1 cursor-pointer"
               onClick={() => hasChildren && toggleExpansion(node.id)}
             >
               {renderIcon(node, isExpanded)}
-              <span className="text-sm">
+              <span className={`text-sm ${isArrayEntry ? "text-cyan-800 font-bold" : ""}`}>
                 {node.name}
                 {node.metadata.required === "yes" && (
                   <span className="text-red font-bold ml-1" title="Required">*</span>
                 )}
-                <span className="text-xs text-gray ml-2">
-                  {node.metadata.type === "array"
+                <span className={`text-xs ml-2 ${isArrayEntry ? "text-cyan-600 font-semibold" : "text-gray"}`}>
+                  {isArrayEntry && "(Array Entry)"}
+                  {!isArrayEntry && node.metadata.type === "array"
                     ? node.metadata.array === "document" ? "(Document list)" : "(String list)"
                     : ""
                   }
