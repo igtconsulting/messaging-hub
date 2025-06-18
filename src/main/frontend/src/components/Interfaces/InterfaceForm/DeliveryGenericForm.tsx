@@ -14,7 +14,7 @@ import MultiSelect from "../../General/Form/MultiSelect";
 import {extractPathsFromSchema} from "../../../services/schemeFormating";
 
 type InterfaceFormProps = {
-  submitForm: (formValue: InterfaceDeliveryOptions) => void;
+  submitForm: (formValue: InterfaceDeliveryOptions) => Promise<void>;
   goBack: () => void;
   interfaceEnv?: Interface | null;
   interfaceGenericOptions?: GenericDeliveryConfig[];

@@ -6,10 +6,10 @@ import {getCustomServices} from "../../../services/apiService.ts";
 import SearchableSelect from "../../General/Form/SearchableSelect.tsx";
 
 type InterfaceFormProps = {
-  submitForm: (formValue: InterfaceDeliveryOptions) => void;
+  submitForm: (formValue: InterfaceDeliveryOptions) => Promise<void>;
   goBack: () => void;
   interfaceEnv?: Interface | null;
-  customServiceName?: CustomServiceName 
+  customServiceName?: CustomServiceName
 };
 
 const DeliveryCustomForm: React.FC<InterfaceFormProps> = ({

@@ -23,7 +23,7 @@ import {
 import Loading from "../../General/Loading";
 
 type InterfaceFormProps = {
-  submitForm: (formValue: Interface) => void;
+  submitForm: (formValue: Interface) => Promise<void>;
   interfaceEnv?: Interface | null;
 };
 
@@ -81,9 +81,10 @@ const InterfaceForm: React.FC<InterfaceFormProps> = ({
     setCurrentState(1);
   }
 
-  function finishInterface(deliveryOptions: InterfaceDeliveryOptions) {
-    if (interfaceDetails)
-      submitForm({ ...interfaceDetails, ...deliveryOptions });
+  async function finishInterface(deliveryOptions: InterfaceDeliveryOptions) {
+    if (interfaceDetails) {
+      await submitForm({ ...interfaceDetails, ...deliveryOptions });
+    }
   }
 
   const formattedTopicData = useMemo(() => {
