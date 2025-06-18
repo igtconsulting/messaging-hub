@@ -82,6 +82,7 @@ function Dashboard() {
             color={Blue}
             icon={Connections}
             loading={loading}
+            link="/connections"
           />
           <DashboardCardColored
             text="Created topics"
@@ -89,6 +90,7 @@ function Dashboard() {
             color={Purple}
             icon={Topics}
             loading={loading}
+            link="/topics"
           />
           <DashboardCardColored
             text="Created interfaces"
@@ -96,6 +98,7 @@ function Dashboard() {
             color={Green}
             icon={Interfaces}
             loading={loading}
+            link="/interfaces"
           />
         </div>
       </div>

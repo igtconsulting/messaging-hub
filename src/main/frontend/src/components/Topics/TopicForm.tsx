@@ -158,12 +158,14 @@ const TopicForm: React.FC<TopicFormProps> = ({
         error={error}
         value={topicName}
         onChange={(e) => setTopicName(e.target.value)}
+        disabled={topic ? true : false}
       />
       <SearchableSelect
         options={formattedPackageData}
         label="Package"
         value={selectedPackageName}
         onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedPackageName(e.target.value)}
+        disabled={topic ? true : false}
         placeholder="Search packages..."
       />
       <SearchableSelect

@@ -1,5 +1,6 @@
 // DashboardCardColored.tsx
 import { SVGProps } from "react";
+import { Link } from "react-router-dom";
 import Loading from "../General/Loading";
 
 type Props = {
@@ -8,6 +9,7 @@ type Props = {
   number: number | string;
   color: string;
   loading: boolean;
+  link?: string;
 };
 
 const DashboardCardColored: React.FC<Props> = ({
@@ -16,9 +18,10 @@ const DashboardCardColored: React.FC<Props> = ({
   number,
   color,
   loading,
+  link,
 }) => {
-  return (
-    <div className="relative">
+  const content = (
+    <div className={`relative ${link ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''}`}>
       <img src={color} className="rounded-md max-h-80" alt={text} />
       <div className="absolute top-0 left-0 right-0 bottom-0 flex items-start justify-end pt-4 pr-4">
         <Icon className="text-white opacity-80 w-20 md:w-10 lg:w-20 h-auto" />
@@ -33,6 +36,8 @@ const DashboardCardColored: React.FC<Props> = ({
       </div>
     </div>
   );
+
+  return link ? <Link to={link}>{content}</Link> : content;
 };
 
 export default DashboardCardColored;
