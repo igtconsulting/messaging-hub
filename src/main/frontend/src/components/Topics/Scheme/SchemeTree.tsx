@@ -7,7 +7,6 @@ import { DocumentList } from "../../../assets/icons/DocumentList";
 import { Plus } from "../../../assets/icons/Plus";
 import { EditPen } from "../../../assets/icons/EditPen";
 import { DeleteTrash } from "../../../assets/icons/DeleteTrash";
-import { Check } from "../../../assets/icons/Check";
 import { X } from "../../../assets/icons/X";
 import Button from "../../General/Button";
 import CreateNodeForm from "./Form/CreateNodeForm";
@@ -106,10 +105,42 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
 
   const updateInputValue = (nodeId: number, value: string) => {
     setInputValues(prev => ({ ...prev, [nodeId]: value }));
+    
+    // Only auto-save for non-array string fields
+    // Array items should be saved manually to avoid duplicates
+    const currentData = publishable ? localPublishData : treeData;
+    const node = currentData.find(n => n.id === nodeId);
+    const parent = node?.parent ? currentData.find(n => n.id === node.parent) : null;
+    const isArrayItem = parent?.metadata.type === "array";
+    
+    if (!isArrayItem) {
+      // Auto-save for regular string fields
+      saveInputValue(nodeId, value);
+    }
   };
 
-  const saveInputValue = (nodeId: number) => {
-    const value = inputValues[nodeId];
+  const handleInputKeyDown = (e: React.KeyboardEvent, nodeId: number) => {
+    if (e.key === 'Enter') {
+      const value = inputValues[nodeId] || '';
+      saveInputValue(nodeId, value);
+    }
+  };
+
+  const handleInputBlur = (nodeId: number) => {
+    // Save array items on blur (when user clicks outside)
+    const currentData = publishable ? localPublishData : treeData;
+    const node = currentData.find(n => n.id === nodeId);
+    const parent = node?.parent ? currentData.find(n => n.id === node.parent) : null;
+    const isArrayItem = parent?.metadata.type === "array";
+    
+    if (isArrayItem) {
+      const value = inputValues[nodeId] || '';
+      saveInputValue(nodeId, value);
+    }
+  };
+
+  const saveInputValue = (nodeId: number, valueOverride?: string) => {
+    const value = valueOverride || inputValues[nodeId];
     if (!value) return;
 
     setLocalPublishData(prev => {
@@ -120,11 +151,60 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
         
         // Update parent array if this is an array item
         const parent = updated.find(n => n.id === node.parent);
-        if (parent && Array.isArray(parent.metadata.value) && node.metadata.originalKey !== undefined) {
-          const index = parseInt(node.metadata.originalKey);
-          if (index >= 0 && index < parent.metadata.value.length) {
-            parent.metadata.value[index] = value;
-            node.name = `${parent.name}[${index}]: "${value}"`;
+        if (parent && parent.metadata.type === "array" && parent.metadata.array === "string") {
+          // Update the node name
+          const index = parseInt(node.metadata.originalKey || "0");
+          node.name = `${parent.name}[${index}]: "${value}"`;
+          
+          // Rebuild parent array from all child nodes, including replica ones
+          const allStringChildren = updated
+            .filter(n =>
+              n.parent === parent.id &&
+              n.metadata.type === "string" &&
+              n.metadata.originalKey !== undefined
+            )
+            .sort((a, b) => parseInt(a.metadata.originalKey || "0") - parseInt(b.metadata.originalKey || "0"));
+          
+          parent.metadata.value = allStringChildren
+            .map(child => child.metadata.value)
+            .filter(val => val !== undefined && val !== "");
+          
+          // Check if this string array is inside a document object (document array entry)
+          const grandparent = updated.find(n => n.id === parent.parent);
+          if (grandparent && grandparent.metadata.type === "object" && grandparent.metadata.replicaOf) {
+            // Update the document object's value
+            if (!grandparent.metadata.value || typeof grandparent.metadata.value !== "object" || Array.isArray(grandparent.metadata.value)) {
+              grandparent.metadata.value = {};
+            }
+            (grandparent.metadata.value as Record<string, any>)[parent.name] = parent.metadata.value;
+            
+            // Don't cascade further up - let the collection handle the final document array rebuild
+          }
+        }
+        // Handle updates to fields within document objects (document array entries)
+        else if (parent && parent.metadata.type === "object" && parent.metadata.replicaOf) {
+          // This is a field within a document array entry
+          // Update the parent document's value object
+          if (!parent.metadata.value || typeof parent.metadata.value !== "object" || Array.isArray(parent.metadata.value)) {
+            parent.metadata.value = {};
+          }
+          (parent.metadata.value as Record<string, any>)[node.name] = value;
+          
+          // Also update the grandparent document array
+          const grandparent = updated.find(n => n.id === parent.parent);
+          if (grandparent && grandparent.metadata.type === "array" && grandparent.metadata.array === "document") {
+            // Rebuild the grandparent array from all document children
+            const allDocumentChildren = updated
+              .filter(n => n.parent === grandparent.id && n.metadata.replicaOf === grandparent.id)
+              .sort((a, b) => {
+                const aMatch = a.name.match(/\[(\d+)\]/);
+                const bMatch = b.name.match(/\[(\d+)\]/);
+                const aIndex = aMatch ? parseInt(aMatch[1]) : 0;
+                const bIndex = bMatch ? parseInt(bMatch[1]) : 0;
+                return aIndex - bIndex;
+              });
+            
+            grandparent.metadata.value = allDocumentChildren.map(docChild => docChild.metadata.value || {});
           }
         }
       }
@@ -145,16 +225,18 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
         parent.metadata.value = [];
       }
 
-      // Calculate correct index based on existing array items
+      // Calculate correct index based on existing array items in THIS specific array only
       const existingStringItems = updated.filter(n =>
         n.parent === parentId &&
         n.metadata.type === "string" &&
-        !n.metadata.replicaOf
+        n.metadata.originalKey !== undefined
       );
       const currentArrayLength = existingStringItems.length;
       
-      parent.metadata.value.push(value);
-
+      // Check if this string array is inside a document entry
+      const documentParent = updated.find(n => n.id === parent.parent);
+      const isInDocumentEntry = documentParent && documentParent.metadata.type === "object" && documentParent.metadata.replicaOf;
+      
       const newNode: TreeNode = {
         id: Date.now() + Math.random(),
         parent: parentId,
@@ -163,12 +245,34 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
         metadata: {
           type: "string",
           value: value,
-          originalKey: String(currentArrayLength)
+          originalKey: String(currentArrayLength),
+          ...(isInDocumentEntry ? { replicaOf: documentParent.metadata.replicaOf } : {})
         }
       };
 
       updated.push(newNode);
       parent.children.push(newNode.id);
+
+      // Rebuild parent array from all child nodes to ensure consistency (include replica items)
+      const allStringChildren = updated
+        .filter(n =>
+          n.parent === parentId &&
+          n.metadata.type === "string" &&
+          n.metadata.originalKey !== undefined
+        )
+        .sort((a, b) => parseInt(a.metadata.originalKey || "0") - parseInt(b.metadata.originalKey || "0"));
+      
+      parent.metadata.value = allStringChildren
+        .map(child => child.metadata.value)
+        .filter(val => val !== undefined && val !== "");
+      
+      // If this string array is inside a document entry, update the document object too
+      if (isInDocumentEntry && documentParent) {
+        if (!documentParent.metadata.value || typeof documentParent.metadata.value !== "object" || Array.isArray(documentParent.metadata.value)) {
+          documentParent.metadata.value = {};
+        }
+        (documentParent.metadata.value as Record<string, any>)[parent.name] = parent.metadata.value;
+      }
 
       // Auto-expand parent
       setExpandedNodes(prev => new Set([...prev, parentId, newNode.id]));
@@ -189,12 +293,24 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
         parent.metadata.value = [];
       }
 
+      // Get existing document entries to see what data we should preserve
+      const currentDocuments = updated.filter(n => n.parent === parentId && n.metadata.replicaOf === parentId);
+      
+      // If we have existing documents, use the last one as a base for current values
+      let existingData: Record<string, any> = {};
+      if (currentDocuments.length > 0) {
+        const lastDocument = currentDocuments[currentDocuments.length - 1];
+        if (lastDocument.metadata.value && typeof lastDocument.metadata.value === "object") {
+          existingData = { ...(lastDocument.metadata.value as Record<string, any>) };
+        }
+      }
+      
       // Collect values from ALL children of the parent (the template fields)
       const children = updated.filter(n => n.parent === parentId && !n.metadata.replicaOf);
       const documentObject: Record<string, any> = {};
       let hasValues = false;
 
-      const collectNodeData = (node: TreeNode): any => {
+      const collectNodeData = (node: TreeNode, isInDocumentEntry = false): any => {
         if (node.metadata.type === "string") {
           const value = inputValues[node.id]?.trim() || "";
           if (value) hasValues = true;
@@ -202,12 +318,43 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
         } else if (node.metadata.type === "array") {
           // Collect array data from children
           if (node.metadata.array === "string") {
-            // String array - collect values from child nodes
-            const stringChildren = updated.filter(n => n.parent === node.id && !n.metadata.replicaOf);
+            // Look for document entry version of this array node first
+            const documentEntryArrayNode = updated.find(n =>
+              n.name === node.name &&
+              n.metadata.type === "array" &&
+              n.metadata.array === "string" &&
+              n.metadata.replicaOf === parentId &&
+              Array.isArray(n.metadata.value) &&
+              n.metadata.value.length > 0
+            );
+            
+            if (documentEntryArrayNode && Array.isArray(documentEntryArrayNode.metadata.value)) {
+              const values = (documentEntryArrayNode.metadata.value as any[]).filter((val: any) =>
+                val !== undefined && val !== "" && typeof val === "string"
+              );
+              if (values.length > 0) hasValues = true;
+              return values;
+            }
+            
+            // Try to use the array's own metadata.value first (which should be maintained by saveInputValue)
+            if (Array.isArray(node.metadata.value) && node.metadata.value.length > 0) {
+              const values = node.metadata.value.filter(val =>
+                val !== undefined && val !== "" && typeof val === "string"
+              );
+              if (values.length > 0) hasValues = true;
+              return values;
+            }
+            
+            // Fallback: collect from child nodes
+            const stringChildren = updated.filter(n =>
+              n.parent === node.id &&
+              n.metadata.type === "string"
+            );
+            
             const values = stringChildren
               .sort((a, b) => parseInt(a.metadata.originalKey || "0") - parseInt(b.metadata.originalKey || "0"))
               .map(child => child.metadata.value)
-              .filter(val => val !== undefined && val !== "");
+              .filter(val => val !== undefined && val !== "" && typeof val === "string");
             if (values.length > 0) hasValues = true;
             return values;
           } else if (node.metadata.array === "document") {
@@ -221,16 +368,20 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
           const objChildren = updated.filter(n => n.parent === node.id && !n.metadata.replicaOf);
           const obj: Record<string, any> = {};
           objChildren.forEach(objChild => {
-            obj[objChild.name] = collectNodeData(objChild);
+            obj[objChild.name] = collectNodeData(objChild, isInDocumentEntry);
           });
           return obj;
         }
         return "";
       };
 
+      // First pass: collect all data and check for meaningful values
+      const allFieldData: Record<string, any> = {};
       children.forEach(child => {
         const collectedData = collectNodeData(child);
-        // Check if we have meaningful data
+        allFieldData[child.name] = collectedData;
+        
+        // Check if we have meaningful data for hasValues check
         if (child.metadata.type === "string" && collectedData) {
           hasValues = true;
         } else if (child.metadata.type === "array" && Array.isArray(collectedData) && collectedData.length > 0) {
@@ -238,7 +389,46 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
         } else if (child.metadata.type === "object" && typeof collectedData === "object" && Object.keys(collectedData).length > 0) {
           hasValues = true;
         }
-        documentObject[child.name] = collectedData;
+      });
+
+      // Second pass: build documentObject for storage (excluding empty non-required fields)
+      children.forEach(child => {
+        const collectedData = allFieldData[child.name];
+        
+        // Use existing data as fallback for arrays that might have been lost
+        let finalData = collectedData;
+        if (child.metadata.type === "array" && (!Array.isArray(collectedData) || collectedData.length === 0)) {
+          if (existingData[child.name] && Array.isArray(existingData[child.name]) && existingData[child.name].length > 0) {
+            finalData = existingData[child.name];
+            hasValues = true;
+          }
+        }
+        
+        const isRequired = child.metadata.required === "yes";
+        const hasData = child.metadata.type === "string"
+          ? finalData && finalData.trim !== undefined && finalData.trim() !== ""
+          : child.metadata.type === "array"
+            ? Array.isArray(finalData) && finalData.length > 0
+            : child.metadata.type === "object"
+              ? typeof finalData === "object" && Object.keys(finalData).length > 0
+              : !!finalData;
+        
+        if (isRequired || hasData) {
+          documentObject[child.name] = finalData;
+        }
+      });
+      
+      // Third pass: create complete field data for UI nodes (include ALL template fields)
+      const completeFieldData: Record<string, any> = {};
+      children.forEach(child => {
+        const actualData = allFieldData[child.name];
+        // Always include the field, but preserve actual data if it exists
+        if (actualData !== undefined && actualData !== null) {
+          completeFieldData[child.name] = actualData;
+        } else {
+          // Only provide defaults for truly empty fields
+          completeFieldData[child.name] = child.metadata.type === "array" ? [] : "";
+        }
       });
 
       if (!hasValues) return prev; // Don't add empty documents
@@ -249,8 +439,6 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
         n.metadata.replicaOf === parentId
       );
       const currentArrayLength = existingDocuments.length;
-      
-      parent.metadata.value.push(documentObject);
 
       // Create new document node
       const newDocumentNode: TreeNode = {
@@ -363,7 +551,7 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
         return nodes;
       };
       
-      const allChildNodes = createChildNodesRecursively(newDocumentNode.id, documentObject, parentId);
+      const allChildNodes = createChildNodesRecursively(newDocumentNode.id, completeFieldData, parentId);
       childNodes.push(...allChildNodes);
       
       // Set direct children
@@ -375,6 +563,20 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
       updated.push(newDocumentNode);
       updated.push(...allChildNodes);
       parent.children.push(newDocumentNode.id);
+
+      // Rebuild parent array from all existing document children to ensure consistency
+      const allDocumentChildren = updated
+        .filter(n => n.parent === parentId && n.metadata.replicaOf === parentId)
+        .sort((a, b) => {
+          // Sort by the index in the node name [0], [1], etc.
+          const aMatch = a.name.match(/\[(\d+)\]/);
+          const bMatch = b.name.match(/\[(\d+)\]/);
+          const aIndex = aMatch ? parseInt(aMatch[1]) : 0;
+          const bIndex = bMatch ? parseInt(bMatch[1]) : 0;
+          return aIndex - bIndex;
+        });
+      
+      parent.metadata.value = allDocumentChildren.map(docChild => docChild.metadata.value || {});
 
       // Auto-expand parent only, keep newly added document collapsed for cleaner view
       setExpandedNodes(prev => new Set([...prev, parentId]));
@@ -467,9 +669,13 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
                 parent.metadata.value.splice(valueIndex, 1);
               }
               
-              // Get all remaining string children and sort by their current index
+              // Get all remaining string children and sort by their current index (include replica items)
               const siblings = updated
-                .filter(n => n.parent === deletedNode.parent && n.metadata.type === "string" && !n.metadata.replicaOf)
+                .filter(n =>
+                  n.parent === deletedNode.parent &&
+                  n.metadata.type === "string" &&
+                  n.metadata.originalKey !== undefined
+                )
                 .sort((a, b) => parseInt(a.metadata.originalKey || "0") - parseInt(b.metadata.originalKey || "0"));
               
               // Rebuild the array and re-index all siblings
@@ -481,6 +687,15 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
                   parent.metadata.value.push(sibling.metadata.value);
                 }
               });
+              
+              // If this is inside a document entry, update the document object too
+              const documentParent = updated.find(n => n.id === parent.parent);
+              if (documentParent && documentParent.metadata.type === "object" && documentParent.metadata.replicaOf) {
+                if (!documentParent.metadata.value || typeof documentParent.metadata.value !== "object" || Array.isArray(documentParent.metadata.value)) {
+                  documentParent.metadata.value = {};
+                }
+                (documentParent.metadata.value as Record<string, any>)[parent.name] = parent.metadata.value;
+              }
             }
             // For document arrays
             else if (parent.metadata.array === "document") {
@@ -639,8 +854,13 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
               type="text"
               className="bg-gray-lightest rounded-md px-2 py-1 text-sm w-32"
               value={arrayInputs[node.id] || ""}
-              placeholder="Enter value..."
+              placeholder="Enter value then press Enter..."
               onChange={(e) => setArrayInputs(prev => ({ ...prev, [node.id]: e.target.value }))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && arrayInputs[node.id]?.trim()) {
+                  addToStringArray(node.id);
+                }
+              }}
             />
             <Button
               type="button"
@@ -658,7 +878,30 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
         // Check if there are any non-empty inputs in the template fields
         const currentData = publishable ? localPublishData : treeData;
         const children = getChildren(node.id, currentData).filter(child => !child.metadata.replicaOf);
-        const hasInputs = children.some(child => inputValues[child.id]?.trim());
+        
+        // Check if at least one required field is filled, or if any field has input
+        const hasRequiredInputs = children.some(child => {
+          if (child.metadata.required === "yes") {
+            if (child.metadata.type === "string") {
+              return inputValues[child.id]?.trim();
+            } else if (child.metadata.type === "array") {
+              return Array.isArray(child.metadata.value) && child.metadata.value.length > 0;
+            }
+          }
+          return false;
+        });
+        
+        const hasAnyInputs = children.some(child => {
+          if (child.metadata.type === "string") {
+            return inputValues[child.id]?.trim();
+          } else if (child.metadata.type === "array") {
+            return Array.isArray(child.metadata.value) && child.metadata.value.length > 0;
+          }
+          return false;
+        });
+        
+        // Allow adding if we have required fields filled OR any input at all
+        const canAdd = hasRequiredInputs || hasAnyInputs;
         
         return (
           <div className="flex items-center gap-2">
@@ -670,7 +913,7 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
               tableButton={true}
               padding={false}
               className="p-1"
-              disabled={!hasInputs}
+              disabled={!canAdd}
               onClick={() => addToDocumentArray(node.id)}
             />
           </div>
@@ -680,7 +923,8 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
     }
 
     if (node.metadata.type === "string") {
-      const isModified = inputValues[node.id] !== String(node.metadata.value || "");
+      const parent = node.parent ? localPublishData.find(n => n.id === node.parent) : null;
+      const isArrayItem = parent?.metadata.type === "array";
       
       return (
         <div className="flex items-center gap-2">
@@ -689,20 +933,11 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
             className="bg-gray-lightest rounded-md px-2 py-1 text-sm w-32"
             value={inputValues[node.id] || ""}
             onChange={(e) => updateInputValue(node.id, e.target.value)}
+            onKeyDown={isArrayItem ? (e) => handleInputKeyDown(e, node.id) : undefined}
+            onBlur={isArrayItem ? () => handleInputBlur(node.id) : undefined}
+            placeholder={isArrayItem ? "Press Enter or click outside to save" : undefined}
           />
-          {isModified && (
-            <Button
-              type="button"
-              color="blue"
-              icon={Check}
-              iconPosition="center"
-              tableButton={true}
-              padding={false}
-              className="p-1"
-              onClick={() => saveInputValue(node.id)}
-            />
-          )}
-          {node.parent && localPublishData.find(n => n.id === node.parent)?.metadata.type === "array" && (
+          {isArrayItem && (
             <Button
               type="button"
               color="red"
