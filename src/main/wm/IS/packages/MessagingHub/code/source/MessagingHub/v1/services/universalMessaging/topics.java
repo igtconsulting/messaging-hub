@@ -798,7 +798,6 @@ public final class topics
 		} catch (Exception e) {
 		throw new ServiceException(e);
 		}
-			
 		// --- <<IS-END>> ---
 
                 
@@ -817,7 +816,6 @@ public final class topics
 		String documentType = IDataUtil.getString( pipelineCursor, "documentType" );
 		String jsonSchema = IDataUtil.getString( pipelineCursor, "jsonSchema" );
 		//String isPublishable = IDataUtil.getString( pipelineCursor, "isPublishable" );
-		 
 		
 		
 		if(!documentType.contains(":")) {

@@ -9,6 +9,12 @@
       <value name="node_type">record</value>
       <value name="node_subtype">unknown</value>
       <value name="is_public">false</value>
+      <value name="displayName"></value>
+      <value name="favorite"></value>
+      <value name="tags"></value>
+      <value name="since"></value>
+      <value name="deprecated"></value>
+      <value name="is_visible"></value>
       <value name="field_type">record</value>
       <value name="field_dim">0</value>
       <value name="wrapper_type">IData</value>
@@ -80,6 +86,12 @@
       <value name="node_type">record</value>
       <value name="node_subtype">unknown</value>
       <value name="is_public">false</value>
+      <value name="displayName"></value>
+      <value name="favorite"></value>
+      <value name="tags"></value>
+      <value name="since"></value>
+      <value name="deprecated"></value>
+      <value name="is_visible"></value>
       <value name="field_type">record</value>
       <value name="field_dim">0</value>
       <value name="wrapper_type">IData</value>
@@ -121,7 +133,7 @@
     <value name="failureThreshold">5</value>
     <value name="failurePeriod">60</value>
     <value name="openAction">1</value>
-    <null name="serviceToInvoke"/>
+    <value name="serviceToInvoke"></value>
     <value name="resetPeriod">300</value>
     <value name="cancelThreadOnTimeout">false</value>
   </record>
