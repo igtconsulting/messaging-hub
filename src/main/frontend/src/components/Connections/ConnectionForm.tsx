@@ -139,9 +139,11 @@ const ConnectionForm: React.FC<NewConnectionFormProps> = ({
       <Select
           options={connection_options}
           ref={connectionTypeRef}
+          name="connectionType"
           label="Connection type"
           disabled={!!connection}
           value={selectedConnectionType}
+          error={error}
           onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
             setSelectedConnectionType(e.target.value);
           }}
@@ -163,9 +165,11 @@ const ConnectionForm: React.FC<NewConnectionFormProps> = ({
           <SearchableSelect
               options={isResourceNameOptions}
               ref={isResourceNameRef}
+              name="isResourceName"
               label="IS resource name"
               disabled={!selectedConnectionType}
               value={connection?.is_resource_name || ""}
+              error={error}
               placeholder="Search IS resources..."
           />
       )}

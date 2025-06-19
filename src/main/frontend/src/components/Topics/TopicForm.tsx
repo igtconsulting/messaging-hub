@@ -162,18 +162,22 @@ const TopicForm: React.FC<TopicFormProps> = ({
       />
       <SearchableSelect
         options={formattedPackageData}
+        name="packageName"
         label="Package"
         value={selectedPackageName}
         onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedPackageName(e.target.value)}
         disabled={topic ? true : false}
+        error={error}
         placeholder="Search packages..."
       />
       <SearchableSelect
         options={formattedConnectionData}
+        name="connectionName"
         label="Connection"
         value={selectedConnectionName}
         onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedConnectionName(e.target.value)}
         disabled={topic ? true : false}
+        error={error}
         placeholder="Search connections..."
       />
       <h1 className="text-subtitle dark:text-white mb-5">Schema</h1>
