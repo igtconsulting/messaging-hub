@@ -273,8 +273,8 @@ cmV0dXJuIHR5cGU7Cn0=</value>
     <value>com.google.gson.JsonElement</value>
     <value>com.google.gson.JsonObject</value>
     <value>com.google.gson.JsonParser</value>
-    <value>com.google.gson.JsonPrimitive</value>
     <value>com.ibm.icu.text.DisplayContext.Type</value>
+    <value>com.google.gson.JsonPrimitive</value>
     <value>com.wm.app.b2b.broker.UMUtil</value>
     <value>com.wm.app.b2b.broker.conv.Transformer</value>
     <value>com.wm.app.b2b.server.Package</value>
@@ -302,6 +302,7 @@ cmV0dXJuIHR5cGU7Cn0=</value>
     <value>java.util.Arrays</value>
     <value>java.util.Date</value>
     <value>com.pcbsys.nirvana.client.nChannel</value>
+    <value>com.pcbsys.nirvana.client.nChannelAttributes</value>
     <value>com.pcbsys.nirvana.client.nDurable</value>
     <value>com.pcbsys.nirvana.client.nDurableAttributes</value>
     <value>com.pcbsys.nirvana.client.nDurableAttributes.nDurableType</value>

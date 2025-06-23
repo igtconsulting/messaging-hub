@@ -17,8 +17,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.google.gson.JsonPrimitive;
 import com.ibm.icu.text.DisplayContext.Type;
+import com.google.gson.JsonPrimitive;
 import com.wm.app.b2b.broker.UMUtil;
 import com.wm.app.b2b.broker.conv.Transformer;
 import com.wm.app.b2b.server.Package;
@@ -46,6 +46,7 @@ import com.wm.app.b2b.server.ACLManager;
 import java.util.Arrays;
 import java.util.Date;
 import com.pcbsys.nirvana.client.nChannel;
+import com.pcbsys.nirvana.client.nChannelAttributes;
 import com.pcbsys.nirvana.client.nDurable;
 import com.pcbsys.nirvana.client.nDurableAttributes;
 import com.pcbsys.nirvana.client.nDurableAttributes.nDurableType;
@@ -708,10 +709,11 @@ public final class topics
 		// [o] - field:0:required durableType
 		// [o] - field:0:required processingStatus
 		// [o] - field:0:required retrievalStatus
+		// [o] field:0:required totalPublished
 		try {
 			IDataCursor pipelineCursor = pipeline.getCursor();
 			//String	RNAME = IDataUtil.getString( pipelineCursor, "RNAME" );
-			
+		
 			String	documentType = IDataUtil.getString( pipelineCursor, "documentType");
 			String	umAliasName = IDataUtil.getString( pipelineCursor, "umAlias");
 			
@@ -730,6 +732,7 @@ public final class topics
 			umPath = "/" + umPath.replace("::", "/");
 			
 			nChannel channel = umAlias.lookupChannel(umPath);
+		 
 			
 			nDurable[] durables = channel.getDurableManager().getAll();
 			
@@ -755,7 +758,9 @@ public final class topics
 				subResultCursor.destroy();
 			}
 			
-			IDataUtil.put( pipelineCursor, "durableList", resultSet);
+			IDataUtil.put( pipelineCursor, "durableList", resultSet); 
+			IDataUtil.put( pipelineCursor, "totalPublished", channel.getLastEID() + 1);
+			//IDataUtil.put( pipelineCursor, "totalConsumed", channel.getChannelAttributes().get);
 			
 		
 		} catch (Exception e) {

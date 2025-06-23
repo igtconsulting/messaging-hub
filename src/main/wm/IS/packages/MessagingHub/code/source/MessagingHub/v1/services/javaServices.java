@@ -620,6 +620,8 @@ public final class javaServices
 		String nodeName = "/wm/is/" + umPrefix + "/topics" + "/" + topicName;
 		
 		nLeafNode found = (nLeafNode) realm.findNode(nodeName);
+		
+		
 		long totalPublished = found.getTotalPublished();
 		long totalConsumed = found.getTotalConsumed();
 		
@@ -630,6 +632,13 @@ public final class javaServices
 		
 		IDataUtil.put( intermediateCursor, "total_consumed", totalConsumed);
 		
+		if (found != null) {
+			//todo logika z getTopicDurable
+			IDataUtil.put( intermediateCursor, "found", found);
+		} else {
+			IDataUtil.put( intermediateCursor, "found", "no");
+		}
+		
 		intermediateCursor.destroy();
 		IDataUtil.put(pipelineCursor, "topicDetail", intermediateDoc);
 		pipelineCursor.destroy();
@@ -638,7 +647,6 @@ public final class javaServices
 		catch (Exception e) {
 			throw new ServiceException(e);
 		}
-			
 		// --- <<IS-END>> ---
 
                 
