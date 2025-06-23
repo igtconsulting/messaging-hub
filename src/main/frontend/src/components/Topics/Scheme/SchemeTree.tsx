@@ -21,6 +21,7 @@ interface SchemeTreeProps {
   deleteNode?: (id: number) => void;
   editNode?: (updatedNode: TreeNode) => void;
   onChangeLocalPublishData?: (newPublishData?: TreeNode[]) => void;
+  isKafkaConnection?: boolean;
 }
 
 const SchemeTree: React.FC<SchemeTreeProps> = ({
@@ -32,6 +33,7 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
   deleteNode,
   editNode,
   onChangeLocalPublishData,
+  isKafkaConnection,
 }) => {
   // State management
   const [expandedNodes, setExpandedNodes] = useState<Set<number>>(new Set());
@@ -987,6 +989,89 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
 
   // Render controls for editable mode
   const renderEditableControls = (node: TreeNode) => {
+    // For Kafka connections, only show add button for "value" object and allow editing/deleting of user-added children
+    if (isKafkaConnection) {
+      const currentData = publishable ? localPublishData : treeData;
+      const isValueObject = node.name === "value" && node.metadata.type === "object";
+      const isKeyField = node.name === "key";
+      
+      // Helper function to check if a node is a descendant of the ROOT Kafka "value" object
+      const isChildOfValueObject = (nodeToCheck: TreeNode): boolean => {
+        if (nodeToCheck.parent === 0) return false; // Root node
+        
+        const parent = currentData.find(n => n.id === nodeToCheck.parent);
+        if (!parent) return false;
+        
+        // Check if this is the ROOT Kafka "value" object (direct child of topic root)
+        if (parent.name === "value" && parent.metadata.type === "object") {
+          // Verify this is actually the root Kafka value object by checking its parent
+          const grandparent = currentData.find(n => n.id === parent.parent);
+          if (grandparent && (grandparent.parent === 0 || grandparent.id === 1)) {
+            return true; // This is the root Kafka value object
+          }
+        }
+        
+        return isChildOfValueObject(parent); // Recursive check for nested children
+      };
+      
+      // Check if this is a predefined Kafka field that should not be editable
+      const isPredefinedKafkaField = (nodeToCheck: TreeNode): boolean => {
+        // Root level predefined fields
+        if (nodeToCheck.parent === 1 || nodeToCheck.parent === 0) { // Direct children of root
+          return ["key", "value", "timestamp", "headers"].includes(nodeToCheck.name);
+        }
+        return false;
+      };
+      
+      const isUserAddedNode = isChildOfValueObject(node);
+      const isPredefinedField = isPredefinedKafkaField(node);
+      
+      return (
+        <div className="flex items-center gap-2">
+          {/* Show add button for the "value" object and any user-added objects/arrays */}
+          {(isValueObject || (isUserAddedNode && (node.metadata.type === "object" || node.metadata.array === "document"))) && (
+            <Button
+              type="button"
+              color="green"
+              icon={Plus}
+              iconPosition="center"
+              tableButton={true}
+              padding={false}
+              className="p-1"
+              onClick={() => setCreatingChildFor(node.id)}
+            />
+          )}
+          
+          {/* Allow editing/deleting user-added nodes (not predefined Kafka fields) */}
+          {isUserAddedNode && !isPredefinedField && (
+            <>
+              <Button
+                type="button"
+                color="blue"
+                icon={EditPen}
+                iconPosition="center"
+                tableButton={true}
+                padding={false}
+                className="p-1"
+                onClick={() => setEditingNode(node.id)}
+              />
+              <Button
+                type="button"
+                color="red"
+                icon={DeleteTrash}
+                iconPosition="center"
+                tableButton={true}
+                padding={false}
+                className="p-1"
+                onClick={() => deleteNode && deleteNode(node.id)}
+              />
+            </>
+          )}
+        </div>
+      );
+    }
+
+    // Default behavior for non-Kafka connections
     return (
       <div className="flex items-center gap-2">
         {(node.metadata.type === "object" || node.metadata.array === "document") && (

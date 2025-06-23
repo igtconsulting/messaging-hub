@@ -1,1 +1,1 @@
-export const defaultKafkaScheme = `{"type": "object", "additionalProperties": true, "properties": { "key": { "type": [ "null", "string" ] }, "value": { "type": [ "null", "string" ] }, "header": { "type": [ "null", "object" ], "additionalProperties": true, "properties": { "timestamp": { "type": [ "null", "string" ] } } } } }`
+export const defaultKafkaScheme = `{"type": "object", "additionalProperties": true, "properties": { "key": { "type": "string" }, "value": { "type": "object", "properties": {}, "additionalProperties": true } } }`

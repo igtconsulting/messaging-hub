@@ -13,6 +13,7 @@ const Scheme = ({
   data,
   onChange,
   isDefaultKafkaSchema,
+  isKafkaConnection,
   onChangePublish,
 }: {
   topicName: string;
@@ -21,6 +22,7 @@ const Scheme = ({
   data?: Record<string, JSONTreeNode>;
   onChange?: (treeData: TreeNode[]) => void;
   isDefaultKafkaSchema?: boolean;
+  isKafkaConnection?: boolean;
   onChangePublish?: (newPublishData?: TreeNode[]) => void;
   publishData?: Record<string, JSONTreeNode>;
 }) => {
@@ -70,6 +72,20 @@ const Scheme = ({
         topicName
       );
       setTreeData(convertedData);
+    } else if (dataInitialized.current && isDataEmpty(data)) {
+      // Reset to basic schema when switching from Kafka to non-Kafka
+      const basicSchema = [
+        {
+          name: topicName,
+          id: 1,
+          parent: 0,
+          metadata: { type: "object" },
+          children: [],
+        },
+      ];
+      setTreeData(basicSchema);
+      const convertedPublishData = convertTreeDataWithDefaultValues(basicSchema);
+      setPublishDataArray(convertedPublishData);
     }
   }, [data, topicName, isDefaultKafkaSchema]);
 
@@ -186,6 +202,7 @@ const Scheme = ({
             deleteNode={deleteNodeHandler}
             editNode={editNodeHandler}
             onChangeLocalPublishData={onChangePublish}
+            isKafkaConnection={isKafkaConnection}
           />
           <DataConfirm
             show={confirmProps.show}

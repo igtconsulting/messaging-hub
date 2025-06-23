@@ -125,7 +125,7 @@ export function Select({
       tabIndex={0}
       className={`relative min-w-40 min-h-4 border ${disabled ? "cursor-not-allowed" : "cursor-pointer focus:border-blue focus:ring-1 focus:ring-blue hover:border-blue"} border-gray flex items-center gap-2 py-1 px-2 rounded outline-none text-small text-black dark:text-white dark:ring-gray-dark group`}
     >
-      <span className="grow flex gap-2 flex-wrap text-small">
+      <span className="grow flex gap-2 flex-wrap text-small overflow-hidden">
         {multiple
           ? value.map((v) => (
               <button
@@ -134,13 +134,14 @@ export function Select({
                   e.stopPropagation();
                   selectOption(v);
                 }}
-                className={`flex items-center border border-gray rounded py-0.5 px-1 gap-1 cursor-pointer bg-transparent outline-none bg-white`}
+                className={`flex items-center border border-gray rounded py-0.5 px-1 gap-1 cursor-pointer bg-transparent outline-none bg-white truncate max-w-full`}
+                title={v.label}
               >
-                {v.label}
-                <span className={`text-xl text-gray`}>×</span>
+                <span className="truncate">{v.label}</span>
+                <span className={`text-xl text-gray flex-shrink-0`}>×</span>
               </button>
             ))
-          : value?.label}
+          : <span className="truncate" title={value?.label}>{value?.label}</span>}
       </span>
       <div className={`bg-white self-stretch w-0.5`}></div>
       <div>
@@ -170,13 +171,14 @@ export function Select({
             }}
             onMouseEnter={() => setHighlightedIndex(index)}
             key={option.value}
-            className={`cursor-pointer py-1 px-2 flex items-center gap-2 text-gray-darker ${
+            className={`cursor-pointer py-1 px-2 flex items-center gap-2 text-gray-darker truncate ${
               index === highlightedIndex ? "bg-primary " : ""
             } cursor-pointer`}
+            title={option.label}
           >
             <>
-            {option.icon && <option.icon className="text-md" />}
-            {option.label}
+            {option.icon && <option.icon className="text-md flex-shrink-0" />}
+            <span className="truncate">{option.label}</span>
             </>
           </li>
         ))}

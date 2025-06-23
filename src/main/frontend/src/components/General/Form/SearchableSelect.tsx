@@ -209,10 +209,10 @@ const SearchableSelect = forwardRef<HTMLSelectElement, SearchableSelectProps>(
             tabIndex={disabled ? -1 : 0}
           >
             <div className="flex items-center justify-between">
-              <span className={`${selectedOption ? "text-black" : "text-gray"}`}>
+              <span className={`truncate pr-2 ${selectedOption ? "text-black" : "text-gray"}`}>
                 {selectedOption ? selectedOption.label : "Select an option"}
               </span>
-              <div className="ml-2">
+              <div className="ml-2 flex-shrink-0">
                 {isOpen ? (
                   <ArrowUp className="w-4 h-4 text-gray-600" />
                 ) : (
@@ -251,7 +251,7 @@ const SearchableSelect = forwardRef<HTMLSelectElement, SearchableSelectProps>(
                   filteredOptions.map((option, index) => (
                     <div
                       key={option.value}
-                      className={`px-3 py-2 cursor-pointer hover:bg-gray-100 ${
+                      className={`px-3 py-2 cursor-pointer hover:bg-gray-100 truncate ${
                         index === highlightedIndex ? "bg-blue-50" : ""
                       }`}
                       onClick={(e) => {
@@ -259,6 +259,7 @@ const SearchableSelect = forwardRef<HTMLSelectElement, SearchableSelectProps>(
                         selectOption(option);
                       }}
                       onMouseEnter={() => setHighlightedIndex(index)}
+                      title={option.label}
                     >
                       {option.label}
                     </div>

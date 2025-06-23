@@ -177,6 +177,7 @@ const TopicDetail = () => {
         if (!parentNode) return {};
   
         const childObject: Record<string, unknown> = {};
+        const isKafkaConnection = topicDetails?.connection_type?.toLowerCase() === "kafka";
   
         // Get direct children that are not replicas
         const children = schemeDataToPublish.filter((node) =>
@@ -197,7 +198,12 @@ const TopicDetail = () => {
             const objectValue = collectChildValues(child.id);
             // Only include non-empty objects
             if (Object.keys(objectValue).length > 0) {
-              childObject[name] = objectValue;
+              // Special handling for Kafka "value" field - stringify it
+              if (isKafkaConnection && name === "value") {
+                childObject[name] = JSON.stringify(objectValue);
+              } else {
+                childObject[name] = objectValue;
+              }
             }
           } else if (metadata.type === "array") {
             if (metadata.array === "string") {
@@ -563,6 +569,7 @@ const TopicDetail = () => {
             if (!parentNode) return {};
 
             const childObject: Record<string, unknown> = {};
+            const isKafkaConnection = topicDetails?.connection_type?.toLowerCase() === "kafka";
 
             // Get direct children that are not replicas
             const children = schemeDataToPublish.filter((node) =>
@@ -583,7 +590,12 @@ const TopicDetail = () => {
                 const objectValue = collectChildValues(child.id);
                 // Only include non-empty objects
                 if (Object.keys(objectValue).length > 0) {
-                  childObject[name] = objectValue;
+                  // Special handling for Kafka "value" field - stringify it
+                  if (isKafkaConnection && name === "value") {
+                    childObject[name] = JSON.stringify(objectValue);
+                  } else {
+                    childObject[name] = objectValue;
+                  }
                 }
               } else if (metadata.type === "array") {
                 if (metadata.array === "string") {

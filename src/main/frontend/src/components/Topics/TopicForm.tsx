@@ -183,9 +183,10 @@ const TopicForm: React.FC<TopicFormProps> = ({
       <h1 className="text-subtitle dark:text-white mb-5">Schema</h1>
       <Scheme
         topicName={topicName}
-        editable={!isKafkaConn}
+        editable={true}
         onChange={setSchemeData}
-        isDefaultKafkaSchema={isKafkaConn}
+        isDefaultKafkaSchema={isKafkaConn && !topic}
+        isKafkaConnection={isKafkaConn}
         data={initialSchemeData}
       />
       <div className="flex gap-5 mt-8">

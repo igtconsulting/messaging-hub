@@ -79,7 +79,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
             id={id}
             ref={ref}
             onChange={handleChange}
-            className={`w-full max-w-[330px] font-roboto border border-gray ring-2 ring-transparent rounded px-4 py-3 focus:outline-none focus:ring-blue ${className} ${
+            className={`w-full max-w-[330px] font-roboto border border-gray ring-2 ring-transparent rounded px-4 py-3 focus:outline-none focus:ring-blue text-ellipsis overflow-hidden ${className} ${
               errorMessage ? "!border-red !ring-red ring-1" : ""
             }
             ${disabled ? "cursor-not-allowed" : "cursor-pointer"}

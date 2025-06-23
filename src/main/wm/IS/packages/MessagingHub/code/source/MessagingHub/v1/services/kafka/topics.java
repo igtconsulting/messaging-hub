@@ -7,8 +7,14 @@ import com.wm.util.Values;
 import com.wm.app.b2b.server.Service;
 import com.wm.app.b2b.server.ServiceException;
 // --- <<IS-START-IMPORTS>> ---
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 import com.wm.lang.ns.NSField;
 import com.wm.lang.ns.NSName;
+import com.wm.lang.ns.NSNode;
 import com.wm.lang.ns.NSRecord;
 import com.wm.lang.ns.NSRecordUtil;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -23,9 +29,12 @@ import org.apache.kafka.clients.admin.ListTopicsResult;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import com.wm.app.b2b.server.dispatcher.wmmessaging.UMConnectionAlias;
 import com.wm.app.b2b.server.ns.Namespace;
 import com.wm.app.b2b.server.dispatcher.DispatchFacade;
@@ -295,5 +304,276 @@ public final class topics
 
                 
 	}
+
+
+
+	public static final void updateTopic (IData pipeline)
+        throws ServiceException
+	{
+		// --- <<IS-START(updateTopic)>> ---
+		// @sigtype java 3.5
+		// [i] field:0:required documentType
+		// [i] field:0:required jsonSchema
+		IDataCursor pipelineCursor = pipeline.getCursor();
+		String documentType = IDataUtil.getString( pipelineCursor, "documentType" );
+		String jsonSchema = IDataUtil.getString( pipelineCursor, "jsonSchema" );
+		//String isPublishable = IDataUtil.getString( pipelineCursor, "isPublishable" );
+		
+		
+		if(!documentType.contains(":")) {
+			throw new ServiceException("Supplied documentType path '"+documentType+"' is not valid path to document.");
+		}
+		
+		JsonObject jsonRoot = JsonParser.parseString(jsonSchema).getAsJsonObject();		
+		
+		//fieldType = OBJECT | RECORD | RECORDREF | STRING
+		//dimension = ARRAY | SCALAR | TABLE
+		
+		NSName nsName = NSName.create(documentType);
+		NSNode nsNode = Namespace.current().getNode(nsName);
+		
+		NSRecord baseRecord = (NSRecord) nsNode;	
+		
+		//Remove fields of old schema
+		NSField[] oldFields = baseRecord.getFields();
+		
+		for(NSField field: oldFields){
+			if(field.getName().equalsIgnoreCase("_env")) continue;
+			baseRecord.removeField(field);
+		}
+		
+		//Add fields from new schema
+		String allowUnspecifiedFields = "true";
+		if (jsonRoot.has("additionalProperties")){ allowUnspecifiedFields = jsonRoot.get("additionalProperties").getAsString(); }
+		baseRecord.setClosed(!Boolean.valueOf(allowUnspecifiedFields));
+			
+		NSField docidField = NSRecordUtil.createField("esbDocid",encodeFieldType("STRING"),encodeDimension("SCALAR"),Namespace.current(),null);
+		docidField.setOptional(false);
+		docidField.setNillable(false);
+		baseRecord.addField(docidField);
+		
+		JsonObject rootFields = jsonRoot.get("properties").getAsJsonObject();
+		//rootFields.add;
+		
+		JsonArray requiredFields = null;
+		if (jsonRoot.has("required")){
+			requiredFields = jsonRoot.get("required").getAsJsonArray();
+		}
+		
+		List<NSField> fields = processJsonFields(rootFields, requiredFields);
+				
+		for(NSField segmentField: fields){
+			if(segmentField.getName().equalsIgnoreCase("esbDocid")) continue;
+			baseRecord.addField(segmentField);
+		}
+				
+		pipelineCursor.destroy();
+		// --- <<IS-END>> ---
+
+                
+	}
+
+	// --- <<IS-START-SHARED>> ---
+	static int encodeFieldType(String fieldType){
+	int type;
+	if (fieldType.equalsIgnoreCase("STRING")){
+		type = NSField.FIELD_STRING;
+	}
+	else if (fieldType.equalsIgnoreCase("RECORD")){
+		type = NSField.FIELD_RECORD;
+	}
+	else if (fieldType.equalsIgnoreCase("RECORDREF")){
+		type = NSField.FIELD_RECORDREF;
+	}
+	else{
+		type = NSField.FIELD_OBJECT;
+	}
+	return type;
+	}
+	static String decodeFieldType(int fieldType){
+	String type;
+	if (fieldType == NSField.FIELD_OBJECT){
+		type = "OBJECT";
+	}
+	else if (fieldType == NSField.FIELD_RECORD){
+		type = "RECORD";
+	}
+	else if (fieldType == NSField.FIELD_RECORDREF){
+		type = "RECORDREF";
+	}
+	else{
+		type = "STRING";
+	}
+	return type;
+	}
+	
+	public static List<NSField> processJsonFields(JsonObject jsonFields, JsonArray requiredFieldsList) throws ServiceException {
+		
+	List<NSField> resultList = new ArrayList<NSField>();
+	
+	
+	Set<Entry<String, JsonElement>> fieldSet = jsonFields.entrySet();
+	java.util.Iterator<Entry<String, JsonElement>> entryIterator = fieldSet.iterator();
+	while(entryIterator.hasNext()){
+		
+		Entry<String, JsonElement> fieldEntry = entryIterator.next();
+			
+		
+		String name = fieldEntry.getKey();
+		
+		JsonObject fieldDefinition = (JsonObject) fieldEntry.getValue();
+	
+		Boolean required = false;
+		Boolean allowNull = false;
+		Boolean allowUnspecifiedFields = true;
+		
+		if(requiredFieldsList.contains(new JsonPrimitive(name))){
+			required = true;
+		}
+	
+		List<String> typeList = new ArrayList<String>();
+		
+		if (fieldDefinition.has("type")){	
+			JsonElement type = fieldDefinition.get("type");
+			if(type.isJsonArray()){
+				for(int idx = 0; idx<((JsonArray) type).size(); idx++){
+					String currType = type.getAsJsonArray().get(idx).getAsString();
+					if(currType.equalsIgnoreCase("null")) { 
+	            		allowNull = true; 
+	            	} else {
+	            		typeList.add(currType);
+	            	}
+				}
+	    	} else {
+	    		typeList.add(type.getAsString());
+	    	}
+		} else throw new ServiceException("Field "+name+" is missing property type.");
+			    				    
+		
+		NSField field = null;
+		String dimension = "SCALAR";
+		
+		if(typeList.contains("array")){
+			dimension = "ARRAY";
+			
+			JsonElement arrayItems = fieldDefinition.get("items");
+			
+			if(arrayItems.isJsonObject()){
+				fieldDefinition = arrayItems.getAsJsonObject();
+			} else if(arrayItems.isJsonArray()) {
+				JsonArray arrayItemsDefinition = arrayItems.getAsJsonArray();
+				if(arrayItemsDefinition.size() == 1) {
+					fieldDefinition = arrayItemsDefinition.get(0).getAsJsonObject();
+				} else throw new ServiceException("Multiple item definition for array '"+name+"' is currently not supported.");
+			} else throw new ServiceException("Property 'items' of array '"+name+"' is not defined correctly.");
+			
+			
+			//Check the array content type definition again
+			typeList = new ArrayList<String>();
+			if (fieldDefinition.has("type")){	
+	    		JsonElement type = fieldDefinition.get("type");
+	    		if(type.isJsonArray()){
+	    			for(int idx = 0; idx<((JsonArray) type).size(); idx++){
+	    				String currType = type.getAsJsonArray().get(idx).getAsString();
+	                	typeList.add(currType);
+	    			}
+		    	} else {
+		    		typeList.add(type.getAsString());
+		    	}
+	    	} else throw new ServiceException("Array field "+name+" is missing property type.");
+		} 
+		
+	    	//TODO: add string list
+		if (typeList.size() != 1){
+			throw new ServiceException("Incorrect number or combination of types specified for field "+name+"."+typeList.toString());
+		} 
+		
+		if(typeList.contains("object")){
+			
+			JsonObject jsonSubFields = null;
+			JsonArray requiredFieldsArray = null;
+			
+			jsonSubFields = fieldDefinition.get("properties").getAsJsonObject();
+			
+			if (fieldDefinition.has("required")){
+				requiredFieldsArray = fieldDefinition.get("required").getAsJsonArray();
+			}
+			if (fieldDefinition.has("additionalProperties")){
+				allowUnspecifiedFields = fieldDefinition.get("additionalProperties").getAsBoolean();
+			}	
+			
+			NSRecord fieldRecord = new NSRecord(Namespace.current(), name, encodeDimension(dimension));
+			List<NSField> subSegmentFields = processJsonFields(jsonSubFields, requiredFieldsArray);
+			
+			field = NSRecordUtil.createField(name,encodeFieldType("RECORD"),encodeDimension(dimension),Namespace.current(),null);
+						    		
+			for(NSField subSegmentField: subSegmentFields){
+			   fieldRecord.addField(subSegmentField);
+			}
+			
+			fieldRecord.setClosed(!allowUnspecifiedFields);
+			
+			field.setValues(fieldRecord.getValues());
+			
+		} 
+		else {
+			//if type = string -> STRING otherwise -> OBJECT -- PROCESSING TREBA NA ZAKLADE ARRAY / NOT ARRAY nie RECORD etc
+			
+			field = NSRecordUtil.createField(name,encodeFieldType(typeList.get(0)),encodeDimension(dimension),Namespace.current(),null);
+			if(!typeList.contains("string")){
+				field.setJavaWrapperType(jsonTypeToJavaWrapperInt(typeList.get(0)));
+			}
+			
+		}
+		
+		field.setNillable(allowNull);
+		field.setOptional(!required);
+		
+		//TODO: Add node hints field.setHints(hints);
+		//TODO: REQUIRED SHOULD BE BASED ON REQUIRED FIELD NOT TYPE NULL
+		resultList.add(field);
+		// json field types string | number | integer | object | array | boolean | null
+		//fieldType = OBJECT | RECORD | RECORDREF | STRING
+		//dimention = ARRAY - LISTS | SCALAR - SINGLE ITEMS | TABLE ???
+	    	
+	    
+		
+	}
+	
+	
+	return resultList;
+	}
+	
+	static int encodeDimension(String dimension){
+	int dim;
+	if (dimension.equalsIgnoreCase("ARRAY")){
+		dim = NSRecord.DIM_ARRAY;
+	}
+	else if (dimension.equalsIgnoreCase("TABLE")){
+		dim = NSRecord.DIM_TABLE; 
+	}
+	else{
+		dim = NSRecord.DIM_SCALAR;
+	}
+	return dim;
+	}
+	
+	static int jsonTypeToJavaWrapperInt(String type){
+	int typeInt;
+	if (type.equalsIgnoreCase("number")){
+		typeInt = 4;
+	}
+	else if (type.equalsIgnoreCase("integer")){
+		typeInt = 7;
+	}
+	else if (type.equalsIgnoreCase("boolean")){
+		typeInt = 1;
+	}
+	else{
+		typeInt = -1;
+	}
+	return typeInt;
+	}
+	// --- <<IS-END-SHARED>> ---
 }
 
