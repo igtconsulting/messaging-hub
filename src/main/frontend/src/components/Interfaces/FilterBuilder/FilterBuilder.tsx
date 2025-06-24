@@ -1083,6 +1083,174 @@ const FilterBuilder = forwardRef<FilterBuilderRef, FilterBuilderProps>(({
     return { isValid: true }; // Always valid for now
   }, []);
 
+  // Parse raw filter text into visual filter tree structure
+  const parseRawFilter = useCallback((filterText: string): FilterGroup | null => {
+    if (!filterText.trim()) {
+      return {
+        id: 'root',
+        type: 'group',
+        conditions: []
+      };
+    }
+
+    try {
+      // Simple parser for basic filter expressions
+      const rootGroup: FilterGroup = {
+        id: 'root',
+        type: 'group',
+        conditions: []
+      };
+
+      // Split by main logical operators (and/or) while preserving parentheses
+      const tokens = tokenizeFilter(filterText);
+      let currentGroup = rootGroup;
+      let pendingCondition: FilterCondition | null = null;
+      let pendingOperator: 'AND' | 'OR' | null = null;
+
+      for (let i = 0; i < tokens.length; i++) {
+        const token = tokens[i].trim();
+        
+        if (token.toLowerCase() === 'and' || token.toLowerCase() === 'or') {
+          pendingOperator = token.toUpperCase() as 'AND' | 'OR';
+        } else if (token.startsWith('(') && token.endsWith(')')) {
+          // Handle grouped expressions
+          const innerExpression = token.slice(1, -1);
+          const innerGroup = parseRawFilter(innerExpression);
+          if (innerGroup && innerGroup.conditions.length > 0) {
+            const newGroup: FilterGroup = {
+              id: `group_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              type: 'group',
+              conditions: innerGroup.conditions
+            };
+            currentGroup.conditions.push(newGroup);
+            if (pendingOperator && currentGroup.conditions.length > 1) {
+              const prevCondition = currentGroup.conditions[currentGroup.conditions.length - 2];
+              setConditionOperators(prev => ({
+                ...prev,
+                [prevCondition.id]: pendingOperator!
+              }));
+            }
+          }
+        } else {
+          // Parse individual condition
+          const condition = parseCondition(token);
+          if (condition) {
+            currentGroup.conditions.push(condition);
+            if (pendingOperator && currentGroup.conditions.length > 1) {
+              const prevCondition = currentGroup.conditions[currentGroup.conditions.length - 2];
+              setConditionOperators(prev => ({
+                ...prev,
+                [prevCondition.id]: pendingOperator!
+              }));
+            }
+          }
+        }
+        pendingOperator = null;
+      }
+
+      return rootGroup;
+    } catch (error) {
+      console.warn('Failed to parse filter:', error);
+      return null;
+    }
+  }, []);
+
+  // Tokenize filter string while respecting parentheses and quotes
+  const tokenizeFilter = (filterText: string): string[] => {
+    const tokens: string[] = [];
+    let current = '';
+    let parenDepth = 0;
+    let inQuote = false;
+    let i = 0;
+
+    while (i < filterText.length) {
+      const char = filterText[i];
+      const nextChars = filterText.slice(i, i + 4).toLowerCase();
+
+      if (char === "'" && (i === 0 || filterText[i - 1] !== '\\')) {
+        inQuote = !inQuote;
+        current += char;
+      } else if (!inQuote) {
+        if (char === '(') {
+          parenDepth++;
+          current += char;
+        } else if (char === ')') {
+          parenDepth--;
+          current += char;
+        } else if (parenDepth === 0 && (nextChars.startsWith('and ') || nextChars.startsWith('or '))) {
+          // Found logical operator at root level
+          if (current.trim()) {
+            tokens.push(current.trim());
+            current = '';
+          }
+          tokens.push(nextChars.startsWith('and ') ? 'and' : 'or');
+          i += nextChars.startsWith('and ') ? 3 : 2; // Skip the operator
+        } else {
+          current += char;
+        }
+      } else {
+        current += char;
+      }
+      i++;
+    }
+
+    if (current.trim()) {
+      tokens.push(current.trim());
+    }
+
+    return tokens;
+  };
+
+  // Parse individual condition from string like "field = 'value'"
+  const parseCondition = (conditionStr: string): FilterCondition | null => {
+    try {
+      // Match pattern: field operator value
+      const conditionRegex = /^(\w+(?:\.\w+)*(?:\[\d+\])?)\s*([=!<>]+)\s*(.+)$/;
+      const match = conditionStr.match(conditionRegex);
+
+      if (!match) return null;
+
+      const [, fieldPart, operator, valuePart] = match;
+      
+      // Determine field type from schema
+      const baseField = fieldPart.replace(/\[\d+\]$/, '').replace(/\.\w+$/, '');
+      const schemaField = schemaFields.find(f =>
+        f.field === baseField ||
+        f.field === fieldPart ||
+        fieldPart.startsWith(f.field + '.')
+      );
+      
+      const fieldType = schemaField?.type || 'string';
+      
+      // Clean up value (remove quotes for strings)
+      let cleanValue = valuePart.trim();
+      if (cleanValue.startsWith("'") && cleanValue.endsWith("'")) {
+        cleanValue = cleanValue.slice(1, -1);
+      }
+
+      const condition: FilterCondition = {
+        id: `cond_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        field: fieldPart.includes('[') ? fieldPart.split('[')[0] : fieldPart,
+        fieldType: fieldType as FilterCondition['fieldType'],
+        operator: operator,
+        value: cleanValue,
+        valueType: 'literal'
+      };
+
+      // Handle array index
+      const arrayMatch = fieldPart.match(/\[(\d+)\]/);
+      if (arrayMatch) {
+        condition.arrayIndex = arrayMatch[1];
+        condition.fieldType = 'array';
+      }
+
+      return condition;
+    } catch (error) {
+      console.warn('Failed to parse condition:', conditionStr, error);
+      return null;
+    }
+  };
+
   // Apply custom group color (only when Apply button is clicked)
   const applyCustomGroupColor = (groupId: string) => {
     setGroupColors(prev => ({
@@ -1375,7 +1543,16 @@ const FilterBuilder = forwardRef<FilterBuilderRef, FilterBuilderProps>(({
             type="button"
             color={!showAdvanced ? "blue" : "gray"}
             text="Visual Builder"
-            onClick={() => setShowAdvanced(false)}
+            onClick={() => {
+              if (showAdvanced && rawFilter.trim()) {
+                // Parse raw filter and convert to visual mode
+                const parsedTree = parseRawFilter(rawFilter);
+                if (parsedTree) {
+                  setFilterTree(parsedTree);
+                }
+              }
+              setShowAdvanced(false);
+            }}
             disabled={disabled}
           />
           <Button
