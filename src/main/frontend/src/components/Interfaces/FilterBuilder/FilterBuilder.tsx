@@ -86,8 +86,8 @@ const FilterBuilder = forwardRef<FilterBuilderRef, FilterBuilderProps>(({
     type: 'group',
     conditions: []
   });
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [rawFilter, setRawFilter] = useState(value);
+  const [showAdvanced, setShowAdvanced] = useState(value && value.trim() ? true : false);
+  const [rawFilter, setRawFilter] = useState(value || '');
   const [showFieldPicker, setShowFieldPicker] = useState(false);
   const [editingConditionId, setEditingConditionId] = useState<string | null>(null);
   const [treeData, setTreeData] = useState<TreeNode[]>([]);
@@ -211,25 +211,29 @@ const FilterBuilder = forwardRef<FilterBuilderRef, FilterBuilderProps>(({
     }
     
     // If schema key is actually changing (not initial load) - reset filter
+    // BUT only if we don't have an initial value from props
     if (newSchemaKey !== currentSchemaKey) {
-      // Reset to clean state for new schema
-      setFilterTree({
-        id: 'root',
-        type: 'group',
-        conditions: []
-      });
-      setConditionOperators({});
-      setRawFilter('');
-      setGroupColors({}); // Reset group colors
-      setCustomColors({}); // Reset custom colors
-      setShowColorPicker(null); // Close color picker
-      if (onChange) onChange('');
+      // Only reset if there's no initial value from props
+      if (!value || !value.trim()) {
+        // Reset to clean state for new schema
+        setFilterTree({
+          id: 'root',
+          type: 'group',
+          conditions: []
+        });
+        setConditionOperators({});
+        setRawFilter('');
+        setGroupColors({}); // Reset group colors
+        setCustomColors({}); // Reset custom colors
+        setShowColorPicker(null); // Close color picker
+        if (onChange) onChange('');
+      }
       
       // Update current schema key
       setCurrentSchemaKey(newSchemaKey);
     }
     
-  }, [schema, onChange]); // Only depend on schema changes
+  }, [schema, onChange, value]); // Add value to dependencies
 
   // Close color picker when clicking outside and auto-apply custom color
   useEffect(() => {
@@ -378,16 +382,17 @@ const FilterBuilder = forwardRef<FilterBuilderRef, FilterBuilderProps>(({
     }
   }, [filterTree, conditionOperators, generateFilterString, onChange, showAdvanced]);
 
-  // Parse existing value when component mounts or value changes
+  // Initialize from value prop when component mounts or value changes
   useEffect(() => {
-    if (value && value !== rawFilter && !showAdvanced) {
+    if (value !== undefined) {
       setRawFilter(value);
-      // Simple parsing - for now just set raw mode if there's an existing value
-      if (value.trim() && filterTree.conditions.length === 0) {
+      
+      // If we have a non-empty value, show it in raw mode
+      if (value && value.trim()) {
         setShowAdvanced(true);
       }
     }
-  }, [value, rawFilter, showAdvanced, filterTree.conditions.length]);
+  }, [value]);
 
   // Add new condition with template support
   const addCondition = (groupId: string, template?: Partial<FilterCondition>) => {
