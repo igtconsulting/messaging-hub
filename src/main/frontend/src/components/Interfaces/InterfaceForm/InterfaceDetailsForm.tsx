@@ -4,6 +4,7 @@ import Toggle from "../../General/Toggle";
 import Select from "../../General/Form/Select";
 import SearchableSelect from "../../General/Form/SearchableSelect";
 import Input from "../../General/Form/Input";
+import FilterBuilder from "../FilterBuilder/FilterBuilder";
 import {
   RefObject,
   useCallback,
@@ -20,7 +21,7 @@ import {
   SelectTopicOption,
 } from "../../../types";
 import { validateValueError } from "../../../services/formValidations";
-import {getConnection, getMessagingHubUsers} from "../../../services/apiService";
+import {getConnection, getMessagingHubUsers, getTopic} from "../../../services/apiService";
 import { AlertContext } from "../../../contextapi/AlertContext";
 
 type InterfaceFormProps = {
@@ -62,7 +63,6 @@ const InterfaceDetailsForm: React.FC<InterfaceFormProps> = ({
 }) => {
   const interfaceNameRef = useRef<HTMLInputElement>(null);
   const triggerUserRef = useRef<HTMLSelectElement>(null);
-  const messageFilterRef = useRef<HTMLInputElement>(null);
   const deliveryMethodRef = useRef<HTMLSelectElement>(null);
   const [enabled, setEnabled] = useState<boolean>(
     interfaceDetails ? interfaceDetails.enabled : true
@@ -114,7 +114,9 @@ const InterfaceDetailsForm: React.FC<InterfaceFormProps> = ({
       { label: string; value: string }[]
   >([]);
   const [triggerUser, setTriggerUser] = useState(interfaceDetails?.trigger_execution_user || "");
+  const [messageFilter, setMessageFilter] = useState(interfaceDetails?.message_filter || "");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [topicSchema, setTopicSchema] = useState<any>(null);
 
 
   useEffect(() => {
@@ -193,6 +195,23 @@ const InterfaceDetailsForm: React.FC<InterfaceFormProps> = ({
             if (data) {
               setGlobalPrefix(data?.global_prefix || "");
               setConnectionDisplayName(data?.is_resource_name || "");
+            }
+            
+            // Fetch topic schema for FilterBuilder
+            try {
+              const topicData = await getTopic(newConnectionName, selectedOption);
+              if (topicData && topicData.schema) {
+                // Parse the schema if it's a string
+                const parsedSchema = typeof topicData.schema === 'string'
+                  ? JSON.parse(topicData.schema)
+                  : topicData.schema;
+                setTopicSchema(parsedSchema);
+              } else {
+                setTopicSchema(null);
+              }
+            } catch (schemaError) {
+              console.warn("Failed to load topic schema:", schemaError);
+              setTopicSchema(null);
             }
           } catch (error) {
             addAlert(
@@ -364,7 +383,7 @@ const InterfaceDetailsForm: React.FC<InterfaceFormProps> = ({
         global_prefix: globalPrefix,
         trigger_execution_user: triggerUserRef.current?.value,
         environment: selectedEnv,
-        message_filter: selectedConnectionType === 'UM' ? messageFilterRef.current?.value : "",
+        message_filter: selectedConnectionType === 'UM' ? messageFilter : "",
         delivery_method: deliveryMethodRef.current?.value,
         enabled: enabled,
         source_topic: selectedSourceTopic,
@@ -518,14 +537,15 @@ const InterfaceDetailsForm: React.FC<InterfaceFormProps> = ({
           // />
       )}
       {selectedConnectionType === "UM" && (
-        <Input
-        type="text"
-        label="Message filter"
-        name="messageFilter"
-        ref={messageFilterRef}
-        error={error}
-        defaultValue={interfaceDetails ? interfaceDetails.message_filter : ""}
-      />
+        <FilterBuilder
+          value={messageFilter}
+          onChange={setMessageFilter}
+          error={error}
+          name="messageFilter"
+          label="Message filter"
+          disabled={false}
+          schema={topicSchema}
+        />
       )}
       <Select
         options={delivery_options}
