@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from "react";
 import { TreeNode, TreeNodeMetadata } from "../../../types";
 import { Folder } from "../../../assets/icons/Folder";
 import { FolderOpen } from "../../../assets/icons/FolderOpen";
@@ -24,7 +24,11 @@ interface SchemeTreeProps {
   isKafkaConnection?: boolean;
 }
 
-const SchemeTree: React.FC<SchemeTreeProps> = ({
+export interface SchemeTreeRef {
+  validateRequiredFields: () => { isValid: boolean; missingFields: string[] };
+}
+
+const SchemeTree = forwardRef<SchemeTreeRef, SchemeTreeProps>(({
   editable,
   publishable,
   treeData,
@@ -34,7 +38,7 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
   editNode,
   onChangeLocalPublishData,
   isKafkaConnection,
-}) => {
+}, ref) => {
   // State management
   const [expandedNodes, setExpandedNodes] = useState<Set<number>>(new Set());
   const [editingNode, setEditingNode] = useState<number | null>(null);
@@ -142,8 +146,8 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
   };
 
   const saveInputValue = (nodeId: number, valueOverride?: string) => {
-    const value = valueOverride || inputValues[nodeId];
-    if (!value) return;
+    const value = valueOverride !== undefined ? valueOverride : inputValues[nodeId];
+    // Allow empty values so users can clear fields completely
 
     setLocalPublishData(prev => {
       const updated = [...prev];
@@ -169,7 +173,7 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
           
           parent.metadata.value = allStringChildren
             .map(child => child.metadata.value)
-            .filter(val => val !== undefined && val !== "");
+            .filter(val => val !== undefined && val !== "" && typeof val === "string" && val.trim() !== "");
           
           // Check if this string array is inside a document object (document array entry)
           const grandparent = updated.find(n => n.id === parent.parent);
@@ -190,7 +194,14 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
           if (!parent.metadata.value || typeof parent.metadata.value !== "object" || Array.isArray(parent.metadata.value)) {
             parent.metadata.value = {};
           }
-          (parent.metadata.value as Record<string, any>)[node.name] = value;
+          
+          // Only set the value if it's not empty (to avoid empty strings in JSON)
+          if (value && value.trim() !== "") {
+            (parent.metadata.value as Record<string, any>)[node.name] = value;
+          } else {
+            // Remove the field if value is empty
+            delete (parent.metadata.value as Record<string, any>)[node.name];
+          }
           
           // Also update the grandparent document array
           const grandparent = updated.find(n => n.id === parent.parent);
@@ -408,14 +419,15 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
         
         const isRequired = child.metadata.required === "yes";
         const hasData = child.metadata.type === "string"
-          ? finalData && finalData.trim !== undefined && finalData.trim() !== ""
+          ? finalData && typeof finalData === "string" && finalData.trim() !== ""
           : child.metadata.type === "array"
             ? Array.isArray(finalData) && finalData.length > 0
             : child.metadata.type === "object"
               ? typeof finalData === "object" && Object.keys(finalData).length > 0
               : !!finalData;
         
-        if (isRequired || hasData) {
+        // Only include fields that have actual data or are required with data
+        if (hasData || (isRequired && hasData)) {
           documentObject[child.name] = finalData;
         }
       });
@@ -464,7 +476,7 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
         Object.entries(data).forEach(([key, value]) => {
           const childId = Date.now() + Math.random() + Math.random();
           
-          // Find the original template node to get the correct type
+          // Find the original template node to get the correct type and metadata
           const originalTemplate = updated.find(n =>
             n.parent === originalTemplateParentId &&
             n.name === key &&
@@ -474,7 +486,7 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
           let childNode: TreeNode;
           
           if (originalTemplate?.metadata.type === "array") {
-            // Create array node
+            // Create array node - preserve original metadata
             childNode = {
               id: childId,
               parent: parentNodeId,
@@ -484,7 +496,8 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
                 type: "array",
                 array: originalTemplate.metadata.array,
                 value: Array.isArray(value) ? value : [],
-                replicaOf: parentId
+                replicaOf: parentId,
+                required: originalTemplate.metadata.required // Preserve required status
               }
             };
             
@@ -511,7 +524,7 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
               });
             }
           } else if (originalTemplate?.metadata.type === "object") {
-            // Create object node
+            // Create object node - preserve original metadata
             childNode = {
               id: childId,
               parent: parentNodeId,
@@ -520,7 +533,9 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
               metadata: {
                 type: "object",
                 value: value,
-                replicaOf: parentId
+                replicaOf: parentId,
+                required: originalTemplate.metadata.required, // Preserve required status
+                additionalProperties: originalTemplate.metadata.additionalProperties // Preserve additional properties
               }
             };
             
@@ -533,7 +548,7 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
                 .map(child => child.id);
             }
           } else {
-            // Create string node
+            // Create string node - preserve original metadata
             childNode = {
               id: childId,
               parent: parentNodeId,
@@ -542,7 +557,8 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
               metadata: {
                 type: "string",
                 value: value,
-                replicaOf: parentId
+                replicaOf: parentId,
+                required: originalTemplate?.metadata.required // Preserve required status
               }
             };
           }
@@ -599,20 +615,26 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
           // Clear array data completely
           node.metadata.value = [];
           
-          // Remove ALL children from the array (both template and non-template)
+          // Remove ONLY replica children (array entries), keep template structure
           const arrayChildren = updated.filter(n => n.parent === node.id);
           arrayChildren.forEach(child => {
-            // Remove this child and all its descendants
-            const removeNodeAndChildren = (nodeId: number) => {
-              const childrenToRemove = updated.filter(n => n.parent === nodeId);
-              childrenToRemove.forEach(childNode => removeNodeAndChildren(childNode.id));
-              updated = updated.filter(n => n.id !== nodeId);
-            };
-            removeNodeAndChildren(child.id);
+            // Only remove replica children (array entries), not template children
+            if (child.metadata.replicaOf || child.metadata.originalKey !== undefined) {
+              // Remove this child and all its descendants
+              const removeNodeAndChildren = (nodeId: number) => {
+                const childrenToRemove = updated.filter(n => n.parent === nodeId);
+                childrenToRemove.forEach(childNode => removeNodeAndChildren(childNode.id));
+                updated = updated.filter(n => n.id !== nodeId);
+              };
+              removeNodeAndChildren(child.id);
+            }
           });
           
-          // Clear children array
-          node.children = [];
+          // Update children array to only include non-replica children (template structure)
+          node.children = node.children.filter(childId => {
+            const child = updated.find(n => n.id === childId);
+            return child && !child.metadata.replicaOf && child.metadata.originalKey === undefined;
+          });
         } else if (node.metadata.type === "object") {
           // Clear object value
           node.metadata.value = {};
@@ -781,10 +803,31 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
     const isExpanded = expandedNodes.has(node.id);
     const hasChildren = children.length > 0;
     
-    // Check if this is an array entry (has replicaOf for document arrays or originalKey for string arrays)
-    const isArrayEntry = !!(node.metadata.replicaOf || node.metadata.originalKey !== undefined);
+    // Check if this node is part of an array entry structure
+    const isPartOfArrayEntry = (nodeToCheck: TreeNode): boolean => {
+      // Check if this node itself is an array entry
+      if (nodeToCheck.metadata.originalKey !== undefined) return true; // String array item
+      if (nodeToCheck.metadata.replicaOf) return true; // Part of document array structure
+      
+      // Check if any parent is part of array entry structure
+      const parent = nodeToCheck.parent ? currentData.find(n => n.id === nodeToCheck.parent) : null;
+      if (parent) {
+        return isPartOfArrayEntry(parent);
+      }
+      
+      return false;
+    };
     
-    // Apply different background color for array entries
+    const isArrayEntry = isPartOfArrayEntry(node);
+    
+    // Check if this is a TOP-LEVEL array entry (direct child of array with replicaOf, or string array item with originalKey)
+    const parent = node.parent ? currentData.find(n => n.id === node.parent) : null;
+    const isDirectArrayEntry = !!(
+      (node.metadata.originalKey !== undefined) || // String array item
+      (node.metadata.replicaOf && parent?.metadata.type === "array") // Direct document array entry
+    );
+    
+    // Apply cyan background color for all elements that are part of array entries
     const bgColor = isArrayEntry ? "bg-cyan-100 border-l-4 border-cyan-500" : "bg-white";
 
     return (
@@ -811,10 +854,12 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
                   <span className="text-red font-bold ml-1" title="Required">*</span>
                 )}
                 <span className={`text-xs ml-2 ${isArrayEntry ? "text-cyan-600 font-semibold" : "text-gray"}`}>
-                  {isArrayEntry && "(Array Entry)"}
-                  {!isArrayEntry && node.metadata.type === "array"
+                  {isDirectArrayEntry && "(Array Entry)"}
+                  {!isDirectArrayEntry && node.metadata.type === "array"
                     ? node.metadata.array === "document" ? "(Document list)" : "(String list)"
-                    : ""
+                    : !isDirectArrayEntry && node.metadata.type
+                      ? `(${node.metadata.type})`
+                      : ""
                   }
                 </span>
               </span>
@@ -850,11 +895,42 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
   const renderPublishableControls = (node: TreeNode) => {
     if (node.metadata.type === "array") {
       if (node.metadata.array === "string") {
+        // Check if this string array is required and empty
+        const isArrayEmpty = !Array.isArray(node.metadata.value) || node.metadata.value.length === 0;
+        const isArrayRequired = node.metadata.required === "yes";
+        
+        // For arrays within document entries, check if parent context has data
+        let shouldShowAsRequired = false;
+        const parent = node.parent ? localPublishData.find(n => n.id === node.parent) : null;
+        const isInDocumentEntry = parent?.metadata.type === "object" && parent?.metadata.replicaOf;
+        
+        if (isInDocumentEntry && isArrayRequired && isArrayEmpty) {
+          // Check if any sibling fields have data in the document entry
+          const currentData = publishable ? localPublishData : treeData;
+          const siblings = getChildren(parent!.id, currentData).filter(child => !child.metadata.replicaOf);
+          const parentHasAnyData = siblings.some(sibling => {
+            if (sibling.metadata.type === "string") {
+              return !!(inputValues[sibling.id]?.trim());
+            } else if (sibling.metadata.type === "array") {
+              return Array.isArray(sibling.metadata.value) && sibling.metadata.value.length > 0;
+            }
+            return false;
+          });
+          shouldShowAsRequired = parentHasAnyData;
+        } else if (isArrayRequired && isArrayEmpty && !isInDocumentEntry) {
+          // For direct required arrays (not in document entries)
+          shouldShowAsRequired = true;
+        }
+        
+        const inputClassName = `bg-gray-lightest rounded-md px-2 py-1 text-sm w-32 border ${
+          shouldShowAsRequired ? 'border-red-500' : 'border-gray-300'
+        }`;
+        
         return (
           <div className="flex items-center gap-2">
             <input
               type="text"
-              className="bg-gray-lightest rounded-md px-2 py-1 text-sm w-32"
+              className={inputClassName}
               value={arrayInputs[node.id] || ""}
               placeholder="Enter value then press Enter..."
               onChange={(e) => setArrayInputs(prev => ({ ...prev, [node.id]: e.target.value }))}
@@ -881,18 +957,69 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
         const currentData = publishable ? localPublishData : treeData;
         const children = getChildren(node.id, currentData).filter(child => !child.metadata.replicaOf);
         
-        // Check if at least one required field is filled, or if any field has input
-        const hasRequiredInputs = children.some(child => {
-          if (child.metadata.required === "yes") {
+        // Enhanced validation logic for required fields
+        const validateRequiredFields = (childNodes: TreeNode[], parentPath = ''): { isValid: boolean; missingFields: string[] } => {
+          const missingFields: string[] = [];
+          let hasAnyData = false;
+          
+          for (const child of childNodes) {
+            const fieldPath = parentPath ? `${parentPath}.${child.name}` : child.name;
+            let hasFieldData = false;
+            
             if (child.metadata.type === "string") {
-              return inputValues[child.id]?.trim();
+              hasFieldData = !!(inputValues[child.id]?.trim());
             } else if (child.metadata.type === "array") {
-              return Array.isArray(child.metadata.value) && child.metadata.value.length > 0;
+              hasFieldData = Array.isArray(child.metadata.value) && child.metadata.value.length > 0;
+            } else if (child.metadata.type === "object") {
+              // Check nested object fields
+              const nestedChildren = getChildren(child.id, currentData).filter(c => !c.metadata.replicaOf);
+              const nestedValidation = validateRequiredFields(nestedChildren, fieldPath);
+              
+              // Object has data if any of its children have data
+              hasFieldData = nestedValidation.missingFields.length === 0 && nestedChildren.some(nc => {
+                if (nc.metadata.type === "string") {
+                  return !!(inputValues[nc.id]?.trim());
+                } else if (nc.metadata.type === "array") {
+                  return Array.isArray(nc.metadata.value) && nc.metadata.value.length > 0;
+                }
+                return false;
+              });
+              
+              // If the object has any data, then missing nested required fields are relevant
+              if (hasFieldData || nestedChildren.some(nc => {
+                return nc.metadata.type === "string" ? !!(inputValues[nc.id]?.trim()) :
+                       nc.metadata.type === "array" ? Array.isArray(nc.metadata.value) && nc.metadata.value.length > 0 : false;
+              })) {
+                missingFields.push(...nestedValidation.missingFields);
+              }
+            }
+            
+            if (hasFieldData) {
+              hasAnyData = true;
+            }
+            
+            // Check if this field is required and missing
+            if (child.metadata.required === "yes" && !hasFieldData) {
+              // Only add to missing if the parent context has any data (making the parent object "active")
+              const parentHasData = childNodes.some(sibling => {
+                if (sibling.metadata.type === "string") {
+                  return !!(inputValues[sibling.id]?.trim());
+                } else if (sibling.metadata.type === "array") {
+                  return Array.isArray(sibling.metadata.value) && sibling.metadata.value.length > 0;
+                }
+                return false;
+              });
+              
+              if (parentHasData) {
+                missingFields.push(fieldPath);
+              }
             }
           }
-          return false;
-        });
+          
+          return { isValid: missingFields.length === 0, missingFields };
+        };
         
+        const validation = validateRequiredFields(children);
         const hasAnyInputs = children.some(child => {
           if (child.metadata.type === "string") {
             return inputValues[child.id]?.trim();
@@ -902,14 +1029,14 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
           return false;
         });
         
-        // Allow adding if we have required fields filled OR any input at all
-        const canAdd = hasRequiredInputs || hasAnyInputs;
+        const canAdd = hasAnyInputs && validation.isValid;
+        const validationError = !validation.isValid ? validation.missingFields : null;
         
         return (
           <div className="flex items-center gap-2">
             <Button
               type="button"
-              color="green"
+              color={validationError ? "red" : "green"}
               icon={Plus}
               iconPosition="center"
               tableButton={true}
@@ -918,6 +1045,11 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
               disabled={!canAdd}
               onClick={() => addToDocumentArray(node.id)}
             />
+            {validationError && (
+              <div className="text-xs text-red-600 font-medium max-w-xs">
+                Missing required: {validationError.map(field => field.split('.').pop()).join(', ')}
+              </div>
+            )}
           </div>
         );
       }
@@ -928,18 +1060,53 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
       const parent = node.parent ? localPublishData.find(n => n.id === node.parent) : null;
       const isArrayItem = parent?.metadata.type === "array";
       
+      // Check if this is a string field within a document array entry (template field)
+      // These should NOT have delete buttons - they're template fields, not array items
+      const isTemplateFieldInDocumentEntry = parent?.metadata.type === "object" && parent?.metadata.replicaOf;
+      
+      // Only show delete button for actual string array items, not template fields
+      const showDeleteButton = isArrayItem && node.metadata.originalKey !== undefined;
+      
+      // Check if this field is required and empty for red border styling
+      const isFieldEmpty = !(inputValues[node.id]?.trim());
+      const isFieldRequired = node.metadata.required === "yes";
+      
+      // For template fields, check if the parent context has any data (making requirements active)
+      let shouldShowAsRequired = false;
+      if (isTemplateFieldInDocumentEntry && isFieldRequired && isFieldEmpty) {
+        // Check if any sibling fields have data
+        const currentData = publishable ? localPublishData : treeData;
+        const siblings = getChildren(parent!.id, currentData).filter(child => !child.metadata.replicaOf);
+        const parentHasAnyData = siblings.some(sibling => {
+          if (sibling.metadata.type === "string") {
+            return !!(inputValues[sibling.id]?.trim());
+          } else if (sibling.metadata.type === "array") {
+            return Array.isArray(sibling.metadata.value) && sibling.metadata.value.length > 0;
+          }
+          return false;
+        });
+        shouldShowAsRequired = parentHasAnyData;
+      } else if (isFieldRequired && isFieldEmpty && !isTemplateFieldInDocumentEntry) {
+        // For direct required fields (not in template contexts)
+        shouldShowAsRequired = true;
+      }
+      
+      const inputClassName = `bg-gray-lightest rounded-md px-2 py-1 text-sm w-32 border ${
+        shouldShowAsRequired ? 'border-red-500' : 'border-gray-300'
+      }`;
+      
       return (
         <div className="flex items-center gap-2">
           <input
             type="text"
-            className="bg-gray-lightest rounded-md px-2 py-1 text-sm w-32"
+            className={inputClassName}
             value={inputValues[node.id] || ""}
             onChange={(e) => updateInputValue(node.id, e.target.value)}
             onKeyDown={isArrayItem ? (e) => handleInputKeyDown(e, node.id) : undefined}
             onBlur={isArrayItem ? () => handleInputBlur(node.id) : undefined}
             placeholder={isArrayItem ? "Press Enter or click outside to save" : undefined}
           />
-          {isArrayItem && (
+          {showDeleteButton && (
             <Button
               type="button"
               color="red"
@@ -1117,11 +1284,54 @@ const SchemeTree: React.FC<SchemeTreeProps> = ({
   const currentData = publishable ? localPublishData : treeData;
   const rootNodes = getRootNodes(currentData);
 
+  // Expose methods to parent component
+  useImperativeHandle(ref, () => ({
+    validateRequiredFields: () => {
+      // Check if all required fields are filled and collect missing field names
+      const currentData = publishable ? localPublishData : treeData;
+      const missingFields: string[] = [];
+      
+      const checkNodeRequirements = (nodes: TreeNode[], parentPath = ''): void => {
+        for (const node of nodes) {
+          const fieldPath = parentPath ? `${parentPath}.${node.name}` : node.name;
+          
+          if (node.metadata.required === "yes") {
+            let hasValue = false;
+            
+            if (node.metadata.type === "string") {
+              hasValue = !!(inputValues[node.id]?.trim());
+            } else if (node.metadata.type === "array") {
+              hasValue = Array.isArray(node.metadata.value) && node.metadata.value.length > 0;
+            }
+            
+            if (!hasValue) {
+              missingFields.push(fieldPath);
+            }
+          }
+          
+          // Check children recursively
+          const children = getChildren(node.id, currentData);
+          checkNodeRequirements(children, fieldPath);
+        }
+      };
+      
+      const rootNodes = getRootNodes(currentData);
+      checkNodeRequirements(rootNodes);
+      
+      return {
+        isValid: missingFields.length === 0,
+        missingFields
+      };
+    }
+  }));
+
   return (
     <div className="space-y-1">
       {rootNodes.map(node => renderNode(node))}
     </div>
   );
-};
+});
+
+SchemeTree.displayName = 'SchemeTree';
 
 export default SchemeTree;

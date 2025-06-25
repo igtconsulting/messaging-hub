@@ -60,6 +60,7 @@ const TopicDetail = () => {
     content: <>Some content</>,
     confirmAction: () => {},
     buttonColor: "green",
+    isLoading: false,
   });
   const [topicDetails, setTopicDetails] = useState<(Topic & Connection) | null>(
     null
@@ -544,6 +545,12 @@ const TopicDetail = () => {
     };
 
     const confirmAction = async () => {
+      // Set loading state
+      setModalProps((prevProps) => ({
+        ...prevProps,
+        isLoading: true,
+      }));
+
       try {
         let messageToSend: unknown;
 
@@ -551,6 +558,7 @@ const TopicDetail = () => {
           // Check if raw JSON is empty or just whitespace
           if (!rawJsonRef.current || rawJsonRef.current.trim() === "") {
             addAlert("JSON must be provided before publishing.", "error");
+            setModalProps((prevProps) => ({ ...prevProps, isLoading: false }));
             return;
           }
           
@@ -559,6 +567,7 @@ const TopicDetail = () => {
           // Check if JSON is empty object
           if (typeof messageToSend === 'object' && messageToSend !== null && Object.keys(messageToSend).length === 0) {
             addAlert("JSON must be provided before publishing.", "error");
+            setModalProps((prevProps) => ({ ...prevProps, isLoading: false }));
             return;
           }
         } else {
@@ -626,6 +635,7 @@ const TopicDetail = () => {
           // Check if the collected data is empty
           if (typeof messageToSend === 'object' && messageToSend !== null && Object.keys(messageToSend).length === 0) {
             addAlert("Scheme needs to be filled before publishing.", "error");
+            setModalProps((prevProps) => ({ ...prevProps, isLoading: false }));
             return;
           }
         }
@@ -637,6 +647,7 @@ const TopicDetail = () => {
         setModalProps((prevProps) => ({
           ...prevProps,
           show: false,
+          isLoading: false,
         }));
       } catch (e: any) {
         console.error("Publish error:", e);
@@ -674,7 +685,11 @@ const TopicDetail = () => {
           // Show user-friendly message
           addAlert(`Bad request - ${fieldPath} ${errorDescription}`, "error");
           
-          // DON'T close modal - user keeps their data
+          // DON'T close modal - user keeps their data, but reset loading state
+          setModalProps((prevProps) => ({
+            ...prevProps,
+            isLoading: false,
+          }));
           return;
         }
         
@@ -685,6 +700,7 @@ const TopicDetail = () => {
         setModalProps((prevProps) => ({
           ...prevProps,
           show: false,
+          isLoading: false,
         }));
       }
     };
@@ -695,6 +711,7 @@ const TopicDetail = () => {
       content: <ModalContent />,
       confirmAction,
       buttonColor: "green",
+      isLoading: false,
     });
   };
 
@@ -911,6 +928,7 @@ const TopicDetail = () => {
         cancelAction={() =>
           setModalProps((prevProps) => ({ ...prevProps, show: false }))
         }
+        isLoading={modalProps.isLoading}
       />
     </div>
   );

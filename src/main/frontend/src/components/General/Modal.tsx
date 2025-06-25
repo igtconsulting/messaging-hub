@@ -9,6 +9,7 @@ type ModalProps = {
   confirmButtonText?: string;
   cancelAction?: () => void;
   children?: JSX.Element;
+  isLoading?: boolean;
 };
 
 const Modal: React.FC<ModalProps> = ({
@@ -20,6 +21,7 @@ const Modal: React.FC<ModalProps> = ({
   cancelAction,
   children,
   confirmButtonText,
+  isLoading = false,
 }) => {
   return (
     <div className={`fixed inset-0 z-40 ${!show ? "hidden" : ""}`}>
@@ -34,12 +36,18 @@ const Modal: React.FC<ModalProps> = ({
               </div>
             </div>
             <div className="flex justify-end gap-4 pb-4">
-              <Button color="gray" text="Back" onClick={cancelAction} />
+              <Button
+                color="gray"
+                text="Back"
+                onClick={cancelAction}
+                disabled={isLoading}
+              />
               {confirmAction && (
                 <Button
                   color={buttonColor ? buttonColor : "green"}
-                  text={confirmButtonText ?? "Confirm"}
+                  text={isLoading ? "Processing..." : (confirmButtonText ?? "Confirm")}
                   onClick={confirmAction}
+                  disabled={isLoading}
                 />
               )}
             </div>
