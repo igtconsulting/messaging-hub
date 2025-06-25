@@ -93,11 +93,14 @@ const SchemeTree = forwardRef<SchemeTreeRef, SchemeTreeProps>(({
   useEffect(() => {
     if (localPublishData.length > 0) {
       const newInputValues: Record<number, string> = {};
+      
       localPublishData.forEach(node => {
         if (node.metadata.type === "string" && node.metadata.value !== undefined) {
-          newInputValues[node.id] = String(node.metadata.value);
+          const stringValue = String(node.metadata.value);
+          newInputValues[node.id] = stringValue;
         }
       });
+      
       setInputValues(newInputValues);
     }
   }, [localPublishData]);

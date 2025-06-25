@@ -15,6 +15,8 @@ const Scheme = ({
   isDefaultKafkaSchema,
   isKafkaConnection,
   onChangePublish,
+  publishData,
+  publishDataArray: publishDataArrayProp,
 }: {
   topicName: string;
   editable?: boolean;
@@ -25,6 +27,7 @@ const Scheme = ({
   isKafkaConnection?: boolean;
   onChangePublish?: (newPublishData?: TreeNode[]) => void;
   publishData?: Record<string, JSONTreeNode>;
+  publishDataArray?: TreeNode[];
 }) => {
   function isDataEmpty(data?: Record<string, JSONTreeNode>): boolean {
     if (!data) {
@@ -45,22 +48,23 @@ const Scheme = ({
   const [publishDataArray, setPublishDataArray] = useState<TreeNode[]>([]);
 
   useEffect(() => {
-    if (!dataInitialized.current) {
-      const convertedData = !isDataEmpty(data)
-        ? convertToArrayStructure(data!, topicName)
-        : [
-            {
-              name: topicName,
-              id: 1,
-              parent: 0,
-              metadata: { type: "object" },
-              children: treeData
-                .filter((el) => el.parent === 1)
-                .map((el) => el.id),
-            },
-          ];
-      setTreeData(convertedData);
-      // Convert publishData to array structure as well
+    const convertedData = !isDataEmpty(data)
+      ? convertToArrayStructure(data!, topicName)
+      : [
+          {
+            name: topicName,
+            id: 1,
+            parent: 0,
+            metadata: { type: "object" },
+            children: treeData
+              .filter((el) => el.parent === 1)
+              .map((el) => el.id),
+          },
+        ];
+    setTreeData(convertedData);
+    
+    // Initialize publishDataArray only on first load if no publishData provided
+    if (!dataInitialized.current && (!publishData || isDataEmpty(publishData))) {
       const convertedPublishData = convertTreeDataWithDefaultValues(convertedData);
       setPublishDataArray(convertedPublishData);
       dataInitialized.current = true;
@@ -88,6 +92,23 @@ const Scheme = ({
       setPublishDataArray(convertedPublishData);
     }
   }, [data, topicName, isDefaultKafkaSchema]);
+
+  // Handle publishData changes (for JSON to tree sync) - this is the primary handler for parsed JSON data
+  useEffect(() => {
+    if (publishData && !isDataEmpty(publishData)) {
+      const convertedPublishData = convertToArrayStructure(publishData, topicName);
+      setPublishDataArray(convertedPublishData);
+      dataInitialized.current = true;
+    }
+  }, [publishData, topicName]);
+
+  // Handle publishDataArray prop (for direct TreeNode[] data with values already populated)
+  useEffect(() => {
+    if (publishDataArrayProp && publishDataArrayProp.length > 0) {
+      setPublishDataArray(publishDataArrayProp);
+      dataInitialized.current = true;
+    }
+  }, [publishDataArrayProp]);
 
   // console.log(treeData)
   // console.log(publishDataArray)

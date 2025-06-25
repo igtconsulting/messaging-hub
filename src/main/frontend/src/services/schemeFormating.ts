@@ -140,15 +140,37 @@ export function convertToArrayStructure(
   const arrayChildren: number[] = [];
   const rootId = 1;
 
+  // Handle case where the structure has a single root object
+  let actualStructure = jsonStructure;
+  let rootMetadata: any = { type: "object", additionalProperties: "yes" };
+  
+  // Check if we have a single root object like {orderTest: {...}}
+  // This should NOT match normal schema format {type: 'object', properties: {...}}
+  const rootKeys = Object.keys(jsonStructure);
+  const isNormalSchema = jsonStructure.hasOwnProperty('type') && jsonStructure.hasOwnProperty('properties');
+  
+  if (rootKeys.length === 1 && !isNormalSchema && jsonStructure[rootKeys[0]].properties) {
+    const rootObject = jsonStructure[rootKeys[0]];
+    actualStructure = rootObject.properties as Record<string, JSONTreeNode>;
+    rootMetadata = {
+      type: "object",
+      additionalProperties: rootObject.additionalProperties ? "yes" : "no",
+    };
+  } else if (isNormalSchema) {
+    // Normal schema format - use the properties directly
+    actualStructure = jsonStructure.properties as unknown as Record<string, JSONTreeNode>;
+    rootMetadata = {
+      type: "object",
+      additionalProperties: jsonStructure.additionalProperties ? "yes" : "no",
+    };
+  }
+
   arrayStructure.push({
     id: rootId,
     parent: 0,
     name: topicName,
     children: arrayChildren,
-    metadata: {
-      type: "object",
-      additionalProperties: jsonStructure.additionalProperties ? "yes" : "no",
-    },
+    metadata: rootMetadata,
   });
 
   // Converting JSON string of the schema to Array structure: helper recursive function
@@ -176,6 +198,12 @@ export function convertToArrayStructure(
         metadata["additionalProperties"] = jsonTreeNode.additionalProperties
           ? "yes"
           : "no";
+      
+      // Preserve values if they exist in the JSONTreeNode
+      if ((jsonTreeNode as any).value !== undefined) {
+        metadata["value"] = (jsonTreeNode as any).value;
+      }
+      
       arrayStructure.push({
         id: availableId,
         parent: parentId,
@@ -205,8 +233,8 @@ export function convertToArrayStructure(
 
     return availableId;
   }
-  if (jsonStructure.properties) {
-    handleChildren(jsonStructure.properties as unknown as Record<string, JSONTreeNode>, [], rootId);
+  if (actualStructure) {
+    handleChildren(actualStructure as unknown as Record<string, JSONTreeNode>, [], rootId);
   }
   return fillChildren(arrayStructure);
 }

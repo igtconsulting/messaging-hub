@@ -35,6 +35,7 @@ import {
   groupEnvironments,
 } from "../../services/dataFormating";
 import Modal from "../../components/General/Modal";
+import { convertToArrayStructure } from "../../services/schemeFormating";
 // import { formatSchemaForPublish } from "../../services/schemeFormating";
 
 const TopicDetail = () => {
@@ -45,6 +46,7 @@ const TopicDetail = () => {
   const { addAlert } = useContext(AlertContext);
   const activeTabRef = useRef<"json" | "tree">("json");
   const rawJsonRef = useRef<string>("");
+  const [showAdvancedMode, setShowAdvancedMode] = useState(false);
   // const [errorOccurred, setErrorOccurred] = useState(false);
   const [confirmProps, setConfirmProps] = useState({
     show: false,
@@ -67,9 +69,8 @@ const TopicDetail = () => {
   );
   const [interfaceData, setInterfaceData] = useState<TableRow[]>([]);
   const [durablesData, setDurablesData] = useState<TableRow[]>([]);
-  const [schemeDataToPublish, setSchemeDataToPublish] = useState<
-    TreeNode[] | undefined
-  >([]);
+  const [schemeDataToPublish, setSchemeDataToPublish] = useState<TreeNode[]>([]);
+  const schemeDataRef = useRef<TreeNode[]>([]);
   
   // Individual loading states for lazy loading
   const [loadingStates, setLoadingStates] = useState({
@@ -111,7 +112,7 @@ const TopicDetail = () => {
         const parsedSchema = JSON.parse(response.schema);
 
         setTopicDetails({ ...response, ...connectionData });
-        setSchemeDataToPublish(parsedSchema);
+        // Note: schemeDataToPublish will be populated by handleTreeDataChange when Scheme component initializes
       } catch (error) {
         addAlert("There was a problem loading topic schema", "error");
       } finally {
@@ -189,39 +190,140 @@ const TopicDetail = () => {
           const { name, metadata } = child;
   
           if (metadata.type === "string") {
-            // Only include non-empty string values
+            // Only include non-empty string values with robust filtering
             const value = metadata.value ?? "";
-            if (value !== "") {
-              childObject[name] = value;
+            const stringValue = typeof value === 'string' ? value : String(value);
+            if (stringValue.trim() !== "") {
+              childObject[name] = stringValue;
             }
           } else if (metadata.type === "object") {
             // For objects, recursively collect child values
             const objectValue = collectChildValues(child.id);
-            // Only include non-empty objects
+            // Only include objects with meaningful content (non-empty and not just empty strings)
             if (Object.keys(objectValue).length > 0) {
-              // Special handling for Kafka "value" field - stringify it
-              if (isKafkaConnection && name === "value") {
-                childObject[name] = JSON.stringify(objectValue);
-              } else {
-                childObject[name] = objectValue;
+              // Check if the object contains only empty values
+              const hasNonEmptyValues = Object.values(objectValue).some(val => {
+                if (typeof val === 'string') {
+                  return val.trim() !== "";
+                } else if (Array.isArray(val)) {
+                  return val.length > 0;
+                } else if (typeof val === 'object' && val !== null) {
+                  return Object.keys(val).length > 0;
+                }
+                return val != null;
+              });
+              
+              if (hasNonEmptyValues) {
+                // Special handling for Kafka "value" field - stringify it
+                if (isKafkaConnection && name === "value") {
+                  childObject[name] = JSON.stringify(objectValue);
+                } else {
+                  childObject[name] = objectValue;
+                }
               }
             }
           } else if (metadata.type === "array") {
             if (metadata.array === "string") {
-              // For string arrays, use the value directly from metadata
-              const arrayValue = Array.isArray(metadata.value) ? metadata.value.filter(item => item !== "") : [];
-              // Only include non-empty arrays
-              if (arrayValue.length > 0) {
-                childObject[name] = arrayValue;
+              // For string arrays, only process if there's actual content
+              if (Array.isArray(metadata.value) && metadata.value.length > 0) {
+                const arrayValue = metadata.value.filter(item => {
+                  if (typeof item === 'string') {
+                    return item && item.trim() !== "";
+                  }
+                  return item != null && String(item).trim() !== "";
+                });
+                // Only include non-empty arrays with meaningful content
+                if (arrayValue.length > 0) {
+                  childObject[name] = arrayValue;
+                }
               }
             } else if (metadata.array && ["document", "object"].includes(metadata.array)) {
-              // For document/object arrays, use the value from metadata
-              const arrayValue = Array.isArray(metadata.value) ? metadata.value.filter(item =>
-                item && typeof item === 'object' && Object.keys(item).length > 0
-              ) : [];
-              // Only include non-empty arrays
-              if (arrayValue.length > 0) {
-                childObject[name] = arrayValue;
+              // For document/object arrays, collect values from actual replica structures in the tree
+              const replicaNodes = schemeDataToPublish.filter(node => node.metadata.replicaOf === child.id && node.metadata.type === "object");
+              
+              if (replicaNodes.length > 0) {
+                const arrayValue = replicaNodes.map(replicaNode => {
+                  // Collect values from replica's children
+                  const replicaObject: Record<string, unknown> = {};
+                  const replicaChildren = replicaNode.children
+                    ?.map(childId => schemeDataToPublish.find(node => node.id === childId))
+                    .filter((node): node is TreeNode => node != null) || [];
+                  
+                  // Get all children that belong to nested objects to skip them in main processing
+                  const nestedObjectChildren = new Set<number>();
+                  replicaChildren.forEach(child => {
+                    if (child.metadata.type === "object" && child.children) {
+                      child.children.forEach(nestedChildId => nestedObjectChildren.add(nestedChildId));
+                    }
+                  });
+                  
+                  replicaChildren.forEach(replicaChild => {
+                    // Skip children that belong to nested objects - they'll be processed within their parent object context
+                    if (nestedObjectChildren.has(replicaChild.id)) {
+                      return;
+                    }
+                    
+                    const { name: fieldName, metadata: replicaMetadata } = replicaChild;
+                    
+                    if (replicaMetadata.type === "string") {
+                      const value = replicaMetadata.value ?? "";
+                      const stringValue = typeof value === 'string' ? value : String(value);
+                      if (stringValue.trim() !== "") {
+                        replicaObject[fieldName] = stringValue;
+                      }
+                    } else if (replicaMetadata.type === "array" && replicaMetadata.array === "string") {
+                      if (Array.isArray(replicaMetadata.value) && replicaMetadata.value.length > 0) {
+                        const arrayValue = replicaMetadata.value.filter(v => {
+                          if (typeof v === 'string') return v.trim() !== "";
+                          return v != null && String(v).trim() !== "";
+                        });
+                        if (arrayValue.length > 0) {
+                          replicaObject[fieldName] = arrayValue;
+                        }
+                      }
+                    } else if (replicaMetadata.type === "object") {
+                      // For nested objects within replicas, collect from their children
+                      const nestedObjectValue: Record<string, unknown> = {};
+                      const nestedChildren = replicaChild.children
+                        ?.map(childId => schemeDataToPublish.find(node => node.id === childId))
+                        .filter((node): node is TreeNode => node != null) || [];
+                      
+                      nestedChildren.forEach(nestedChild => {
+                        const { name: nestedFieldName, metadata: nestedMetadata } = nestedChild;
+                        
+                        if (nestedMetadata.type === "string") {
+                          const value = nestedMetadata.value ?? "";
+                          const stringValue = typeof value === 'string' ? value : String(value);
+                          if (stringValue.trim() !== "") {
+                            nestedObjectValue[nestedFieldName] = stringValue;
+                          }
+                        } else if (nestedMetadata.type === "array" && nestedMetadata.array === "string") {
+                          if (Array.isArray(nestedMetadata.value) && nestedMetadata.value.length > 0) {
+                            const arrayValue = nestedMetadata.value.filter(v => {
+                              if (typeof v === 'string') return v.trim() !== "";
+                              return v != null && String(v).trim() !== "";
+                            });
+                            if (arrayValue.length > 0) {
+                              nestedObjectValue[nestedFieldName] = arrayValue;
+                            }
+                          }
+                        }
+                        // Handle further nesting if needed
+                      });
+                      
+                      if (Object.keys(nestedObjectValue).length > 0) {
+                        replicaObject[fieldName] = nestedObjectValue;
+                      }
+                    }
+                  });
+                  
+                  return replicaObject;
+                }).filter(item => Object.keys(item).length > 0); // Remove empty objects
+                
+                // Only include non-empty arrays with meaningful content
+                if (arrayValue.length > 0) {
+                  childObject[name] = arrayValue;
+                }
               }
             }
           }
@@ -468,6 +570,422 @@ const TopicDetail = () => {
     }
   };
 
+  // Generate JSON from tree data
+  const generateJsonFromTree = useCallback((treeData?: TreeNode[]) => {
+    const dataToUse = treeData || schemeDataToPublish || schemeDataRef.current;
+    if (!dataToUse || dataToUse.length === 0) {
+      return "{}";
+    }
+    
+    const collectChildValues = (parentId: number): Record<string, unknown> => {
+      const parentNode = dataToUse.find((node) => node.id === parentId);
+      if (!parentNode) {
+        return {};
+      }
+
+      const childObject: Record<string, unknown> = {};
+      const isKafkaConnection = topicDetails?.connection_type?.toLowerCase() === "kafka";
+
+      // Get direct children in the order they appear in the parent's children array
+      const children = parentNode?.children
+        ?.map(childId => dataToUse.find(node => node.id === childId))
+        .filter((node): node is TreeNode => node != null && !node.metadata.replicaOf) || [];
+
+      for (const child of children) {
+        const { name, metadata } = child;
+
+        if (metadata.type === "string") {
+          // Only include non-empty string values for cleaner JSON with robust filtering
+          const value = metadata.value ?? "";
+          const stringValue = typeof value === 'string' ? value : String(value);
+          if (stringValue.trim() !== "") {
+            childObject[name] = stringValue;
+          }
+        } else if (metadata.type === "object") {
+          // For objects, recursively collect child values
+          const objectValue = collectChildValues(child.id);
+          // Only include objects with meaningful content (non-empty and not just empty strings)
+          if (Object.keys(objectValue).length > 0) {
+            // Check if the object contains only empty values
+            const hasNonEmptyValues = Object.values(objectValue).some(val => {
+              if (typeof val === 'string') {
+                return val.trim() !== "";
+              } else if (Array.isArray(val)) {
+                return val.length > 0;
+              } else if (typeof val === 'object' && val !== null) {
+                return Object.keys(val).length > 0;
+              }
+              return val != null;
+            });
+            
+            if (hasNonEmptyValues) {
+              if (isKafkaConnection && name === "value") {
+                childObject[name] = JSON.stringify(objectValue);
+              } else {
+                childObject[name] = objectValue;
+              }
+            }
+          }
+        } else if (metadata.type === "array") {
+          if (metadata.array === "string") {
+            // For string arrays, only process if there's actual content
+            if (Array.isArray(metadata.value) && metadata.value.length > 0) {
+              const arrayValue = metadata.value.filter(v => {
+                if (typeof v === 'string') {
+                  return v && v.trim() !== "";
+                }
+                return v != null && String(v).trim() !== "";
+              });
+              // Only include non-empty arrays with meaningful content
+              if (arrayValue.length > 0) {
+                childObject[name] = arrayValue;
+              }
+            }
+          } else if (metadata.array && ["document", "object"].includes(metadata.array)) {
+            // For document/object arrays, collect values from actual replica structures in the tree
+            const replicaNodes = dataToUse.filter(node => node.metadata.replicaOf === child.id && node.metadata.type === "object");
+            
+            if (replicaNodes.length > 0) {
+              
+              const arrayValue = replicaNodes.map(replicaNode => {
+                // Collect values from replica's children
+                const replicaObject: Record<string, unknown> = {};
+                const replicaChildren = replicaNode.children
+                  ?.map(childId => dataToUse.find(node => node.id === childId))
+                  .filter((node): node is TreeNode => node != null) || [];
+                
+                // Get all children that belong to nested objects to skip them in main processing
+                const nestedObjectChildren = new Set<number>();
+                replicaChildren.forEach(child => {
+                  if (child.metadata.type === "object" && child.children) {
+                    child.children.forEach(nestedChildId => nestedObjectChildren.add(nestedChildId));
+                  }
+                });
+                
+                replicaChildren.forEach(replicaChild => {
+                  // Skip children that belong to nested objects - they'll be processed within their parent object context
+                  if (nestedObjectChildren.has(replicaChild.id)) {
+                    return;
+                  }
+                  
+                  const { name: fieldName, metadata: replicaMetadata } = replicaChild;
+                  
+                  if (replicaMetadata.type === "string") {
+                    const value = replicaMetadata.value ?? "";
+                    const stringValue = typeof value === 'string' ? value : String(value);
+                    if (stringValue.trim() !== "") {
+                      replicaObject[fieldName] = stringValue;
+                    }
+                  } else if (replicaMetadata.type === "array" && replicaMetadata.array === "string") {
+                    if (Array.isArray(replicaMetadata.value) && replicaMetadata.value.length > 0) {
+                      const arrayValue = replicaMetadata.value.filter(v => {
+                        if (typeof v === 'string') return v.trim() !== "";
+                        return v != null && String(v).trim() !== "";
+                      });
+                      if (arrayValue.length > 0) {
+                        replicaObject[fieldName] = arrayValue;
+                      }
+                    }
+                  } else if (replicaMetadata.type === "object") {
+                    // For nested objects within replicas, collect from their children
+                    const nestedObjectValue: Record<string, unknown> = {};
+                    const nestedChildren = replicaChild.children
+                      ?.map(childId => dataToUse.find(node => node.id === childId))
+                      .filter((node): node is TreeNode => node != null) || [];
+                    
+                    nestedChildren.forEach(nestedChild => {
+                      const { name: nestedFieldName, metadata: nestedMetadata } = nestedChild;
+                      
+                      if (nestedMetadata.type === "string") {
+                        const value = nestedMetadata.value ?? "";
+                        const stringValue = typeof value === 'string' ? value : String(value);
+                        if (stringValue.trim() !== "") {
+                          nestedObjectValue[nestedFieldName] = stringValue;
+                        }
+                      } else if (nestedMetadata.type === "array" && nestedMetadata.array === "string") {
+                        if (Array.isArray(nestedMetadata.value) && nestedMetadata.value.length > 0) {
+                          const arrayValue = nestedMetadata.value.filter(v => {
+                            if (typeof v === 'string') return v.trim() !== "";
+                            return v != null && String(v).trim() !== "";
+                          });
+                          if (arrayValue.length > 0) {
+                            nestedObjectValue[nestedFieldName] = arrayValue;
+                          }
+                        }
+                      }
+                      // Handle further nesting if needed
+                    });
+                    
+                    if (Object.keys(nestedObjectValue).length > 0) {
+                      replicaObject[fieldName] = nestedObjectValue;
+                    }
+                  }
+                });
+                
+                return replicaObject;
+              }).filter(item => Object.keys(item).length > 0); // Remove empty objects
+              
+              // Only include non-empty arrays with meaningful content
+              if (arrayValue.length > 0) {
+                childObject[name] = arrayValue;
+              }
+            }
+          }
+        }
+      }
+
+      return childObject;
+    };
+
+    try {
+      const result = collectChildValues(1);
+      const jsonString = JSON.stringify(result, null, 2);
+      return jsonString;
+    } catch (error) {
+      console.error('Failed to generate JSON from tree:', error);
+      return "{}";
+    }
+  }, [schemeDataToPublish, topicDetails]);
+
+  // Parse JSON and populate tree data
+  const parseJsonToTree = useCallback((jsonString: string, forceSchemeRerender?: () => void) => {
+    // Use existing tree data that we have preserved
+    const treeDataToUse = schemeDataToPublish.length > 0 ? schemeDataToPublish : schemeDataRef.current;
+    
+    if (!jsonString.trim() || !treeDataToUse || treeDataToUse.length === 0) {
+      return;
+    }
+    
+    try {
+      const parsedJson = JSON.parse(jsonString);
+      
+      // Create a deep copy of the current tree data to work with
+      const newTreeData = JSON.parse(JSON.stringify(treeDataToUse));
+      
+      // Clear existing replicas and array items before populating to prevent duplicates
+      const clearExistingReplicas = () => {
+        const nodesToRemove: number[] = [];
+        newTreeData.forEach((node: TreeNode) => {
+          if (node.metadata.replicaOf || node.metadata.originalKey !== undefined) {
+            nodesToRemove.push(node.id);
+          }
+        });
+        
+        // Remove replica nodes and clean up parent references
+        nodesToRemove.forEach(nodeId => {
+          const nodeIndex = newTreeData.findIndex((n: TreeNode) => n.id === nodeId);
+          if (nodeIndex !== -1) {
+            const node = newTreeData[nodeIndex];
+            // Remove from parent's children array
+            const parent = newTreeData.find((n: TreeNode) => n.id === node.parent);
+            if (parent) {
+              parent.children = parent.children.filter((childId: number) => childId !== nodeId);
+            }
+            // Remove the node itself
+            newTreeData.splice(nodeIndex, 1);
+          }
+        });
+        
+        // Reset array metadata values
+        newTreeData.forEach((node: TreeNode) => {
+          if (node.metadata.type === "array") {
+            node.metadata.value = [];
+          }
+        });
+      };
+      
+      clearExistingReplicas();
+      
+      // Function to populate tree nodes with JSON values
+      const populateTreeFromJson = (data: any, nodeId: number = 1) => {
+        const node = newTreeData.find((n: TreeNode) => n.id === nodeId);
+        if (!node) {
+          return;
+        }
+
+        if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
+          // Handle object data
+          Object.entries(data).forEach(([key, value]) => {
+            const childNode = newTreeData.find((n: TreeNode) =>
+              n.parent === nodeId && n.name === key && !n.metadata.replicaOf
+            );
+            
+            if (childNode) {
+              if (childNode.metadata.type === "string") {
+                // Handle string fields
+                childNode.metadata.value = String(value);
+                
+              } else if (childNode.metadata.type === "object") {
+                // Handle object fields - recurse into nested object
+                populateTreeFromJson(value, childNode.id);
+                
+              } else if (childNode.metadata.type === "array") {
+                // Handle array fields based on the array type
+                if (Array.isArray(value)) {
+                  if (childNode.metadata.array === "string") {
+                    // String array - create individual string nodes for each item
+                    const stringValues = value.map(v => String(v)).filter(v => v.trim() !== "");
+                    childNode.metadata.value = stringValues;
+                    
+                    // Create individual string nodes for the UI
+                    stringValues.forEach((stringValue, index) => {
+                      const stringNodeId = Date.now() + Math.random() + index;
+                      const stringNode: TreeNode = {
+                        id: stringNodeId,
+                        parent: childNode.id,
+                        name: `${childNode.name}[${index}]: "${stringValue}"`,
+                        children: [],
+                        metadata: {
+                          type: "string",
+                          value: stringValue,
+                          originalKey: String(index)
+                        }
+                      };
+                      newTreeData.push(stringNode);
+                      childNode.children.push(stringNodeId);
+                    });
+                    
+                  } else if (childNode.metadata.array === "document" || childNode.metadata.array === "object") {
+                    // Document/object array - create replica structures for each array item
+                    const filteredObjects = value.filter(v => v && typeof v === 'object');
+                    childNode.metadata.value = filteredObjects;
+                    
+                    // Get the template structure (direct children of the array node that are not replicas)
+                    const templateNodes = newTreeData.filter((n: TreeNode) => n.parent === childNode.id && !n.metadata.replicaOf);
+                    
+                    // Create replica structures for each object in the array
+                    filteredObjects.forEach((objValue, index) => {
+                      
+                      // Create the replica document node
+                      const replicaDocId = Date.now() + Math.random() + index * 1000;
+                      const replicaDocNode: TreeNode = {
+                        id: replicaDocId,
+                        parent: childNode.id,
+                        name: `${childNode.name}[${index}]`,
+                        children: [],
+                        metadata: {
+                          type: "object",
+                          value: objValue,
+                          replicaOf: childNode.id
+                        }
+                      };
+                      newTreeData.push(replicaDocNode);
+                      childNode.children.push(replicaDocId);
+                      
+                      // Create replica child nodes for each field in the template
+                      templateNodes.forEach((templateNode: TreeNode) => {
+                        const fieldValue = objValue[templateNode.name];
+                        const replicaFieldId = Date.now() + Math.random() + index * 1000 + Math.random();
+                        const replicaFieldNode: TreeNode = {
+                          id: replicaFieldId,
+                          parent: replicaDocId,
+                          name: templateNode.name,
+                          children: [],
+                          metadata: {
+                            type: templateNode.metadata.type,
+                            value: fieldValue !== undefined ? fieldValue : (templateNode.metadata.type === "array" ? [] : ""),
+                            // Don't set replicaOf for field nodes within replica - they are children of the replica document
+                            required: templateNode.metadata.required,
+                            ...(templateNode.metadata.array && { array: templateNode.metadata.array })
+                          }
+                        };
+                        newTreeData.push(replicaFieldNode);
+                        replicaDocNode.children.push(replicaFieldId);
+                        
+                        // Handle nested structures for ALL template fields (so users can fill them in visual builder)
+                        if (templateNode.metadata.type === "object") {
+                          // Find template children of this object node
+                          const objectTemplateChildren = newTreeData.filter((n: TreeNode) =>
+                            n.parent === templateNode.id && !n.metadata.replicaOf
+                          );
+                          
+                          // Create replica children for ALL template children (not just those with values)
+                          objectTemplateChildren.forEach((objectTemplateChild: TreeNode) => {
+                            const nestedValue = fieldValue && typeof fieldValue === 'object' ? fieldValue[objectTemplateChild.name] : undefined;
+                            const nestedReplicaId = Date.now() + Math.random() + Math.random();
+                            const nestedReplicaNode: TreeNode = {
+                              id: nestedReplicaId,
+                              parent: replicaFieldId,
+                              name: objectTemplateChild.name,
+                              children: [],
+                              metadata: {
+                                type: objectTemplateChild.metadata.type,
+                                value: nestedValue !== undefined ? nestedValue : (objectTemplateChild.metadata.type === "array" ? [] : ""),
+                                // Don't set replicaOf for nested children - they belong to their parent object, not the array
+                                required: objectTemplateChild.metadata.required,
+                                ...(objectTemplateChild.metadata.array && { array: objectTemplateChild.metadata.array })
+                              }
+                            };
+                            newTreeData.push(nestedReplicaNode);
+                            replicaFieldNode.children.push(nestedReplicaId);
+                            
+                            // Handle further nesting only if there are actual values
+                            if (nestedValue !== undefined && objectTemplateChild.metadata.type === "object" && typeof nestedValue === 'object' && nestedValue !== null) {
+                              populateTreeFromJson(nestedValue, nestedReplicaId);
+                            }
+                          });
+                        } else if (templateNode.metadata.type === "array" && fieldValue !== undefined && Array.isArray(fieldValue)) {
+                          // Handle nested arrays within replica structures (only if there are values)
+                          if (templateNode.metadata.array === "string") {
+                            const stringValues = fieldValue.map(v => String(v)).filter(v => v.trim() !== "");
+                            replicaFieldNode.metadata.value = stringValues;
+                            // Create string array items
+                            stringValues.forEach((stringValue, strIndex) => {
+                              const stringNodeId = Date.now() + Math.random() + strIndex + Math.random();
+                              const stringNode: TreeNode = {
+                                id: stringNodeId,
+                                parent: replicaFieldId,
+                                name: `${templateNode.name}[${strIndex}]: "${stringValue}"`,
+                                children: [],
+                                metadata: {
+                                  type: "string",
+                                  value: stringValue,
+                                  originalKey: String(strIndex)
+                                  // Don't set replicaOf for string array items within nested objects
+                                }
+                              };
+                              newTreeData.push(stringNode);
+                              replicaFieldNode.children.push(stringNodeId);
+                            });
+                          }
+                        }
+                      });
+                    });
+                    
+                    // Template fields should remain empty for new entries
+                    
+                  } else {
+                    // Fallback for other array types
+                    childNode.metadata.value = value;
+                  }
+                } else {
+                  // Expected array but got different type
+                }
+              }
+            }
+          });
+        }
+      };
+
+      populateTreeFromJson(parsedJson);
+      
+      // Update both state and ref immediately
+      setSchemeDataToPublish(newTreeData);
+      schemeDataRef.current = newTreeData;
+      
+      // Force Scheme component to re-render with new data after state update
+      if (forceSchemeRerender) {
+        // Use setTimeout to ensure state is updated before re-render
+        setTimeout(() => {
+          forceSchemeRerender();
+        }, 0);
+      }
+    } catch (error) {
+      console.warn('Failed to parse JSON to tree:', error);
+      addAlert("Invalid JSON format", "error");
+    }
+  }, [schemeDataToPublish, addAlert]);
+
   const handlePublishButtonClick = () => {
     const setModalTab = (tab: "json" | "tree") => {
       activeTabRef.current = tab;
@@ -477,9 +995,11 @@ const TopicDetail = () => {
     };
 
     const ModalContent = () => {
-      const [tab, setTab] = useState<"json" | "tree">("json");
+      const [tab, setTab] = useState<"json" | "tree">("tree");
       const [rawJson, setRawJson] = useState("");
       const [touched, setTouched] = useState(false);
+      const [schemeKey, setSchemeKey] = useState(0); // Force Scheme component re-render
+      const [isParsingJson, setIsParsingJson] = useState(false); // Flag to prevent callback during parsing
 
       const defaultExample = JSON.stringify({ put: "jsonHere" }, null, 2);
 
@@ -489,6 +1009,71 @@ const TopicDetail = () => {
         setRawJson(value);
       };
 
+      const handleTreeDataChange = (newTreeData?: TreeNode[]) => {
+        // Skip updates during JSON parsing to prevent overwriting parsed data
+        if (isParsingJson) {
+          return;
+        }
+        
+        // Prevent data corruption by rejecting smaller tree structures when we have parsed data
+        if (newTreeData && schemeDataRef.current.length > 1 && newTreeData.length === 1) {
+          return;
+        }
+        
+        if (newTreeData) {
+          setSchemeDataToPublish(newTreeData);
+          schemeDataRef.current = newTreeData; // Keep ref in sync
+        }
+      };
+
+      const handleTabChange = (newTab: "json" | "tree") => {
+        const currentTreeData = schemeDataToPublish?.length > 0 ? schemeDataToPublish : schemeDataRef.current;
+        
+        if (newTab === "json" && tab === "tree") {
+          // Switching from tree to JSON - generate JSON from current tree state
+          if (currentTreeData && currentTreeData.length > 0) {
+            const generatedJson = generateJsonFromTree(currentTreeData);
+            if (generatedJson && generatedJson.trim() !== "" && generatedJson !== "{}") {
+              setRawJson(generatedJson);
+              setTouched(true);
+            } else {
+              // If no meaningful data in tree, show empty so placeholder is visible
+              setRawJson("");
+              setTouched(false);
+            }
+          } else {
+            setRawJson("");
+            setTouched(false);
+          }
+        } else if (newTab === "tree" && tab === "json") {
+          // Switching from JSON to tree - parse JSON and populate tree
+          if (rawJson.trim()) {
+            setIsParsingJson(true); // Set flag to prevent callback interference
+            
+            parseJsonToTree(rawJson, () => {
+              setSchemeKey(prev => prev + 1);
+              // Reset flag after component stabilizes but maintain the parsed data
+              setTimeout(() => {
+                // Always keep the flag active longer to prevent final callback corruption
+                setTimeout(() => setIsParsingJson(false), 500);
+              }, 100);
+            });
+          } else {
+            // JSON is empty - clear the tree data back to original schema without values
+            setIsParsingJson(true);
+            
+            // Parse empty JSON to clear all values
+            parseJsonToTree('{}', () => {
+              setSchemeKey(prev => prev + 1);
+              setTimeout(() => {
+                setTimeout(() => setIsParsingJson(false), 500);
+              }, 100);
+            });
+          }
+        }
+        setTab(newTab);
+      };
+
       useEffect(() => {
         setModalTab(tab);
         setRawJsonText(touched ? rawJson : "");
@@ -496,44 +1081,55 @@ const TopicDetail = () => {
 
       return (
           <div className="flex flex-col h-[70vh]">
-            <div className="flex mb-4 border-b">
-              <button
-                  className={`px-4 py-2 ${tab === "json" ? "font-bold border-b-2 border-green-600" : ""}`}
-                  onClick={() => setTab("json")}
-              >
-                Raw JSON
-              </button>
-              <button
-                  className={`px-4 py-2 ${tab === "tree" ? "font-bold border-b-2 border-green-600" : ""}`}
-                  onClick={() => setTab("tree")}
-              >
-                Scheme Tree
-              </button>
+            {/* Toggle buttons similar to FilterBuilder */}
+            <div className="flex gap-2 mb-4">
+              <Button
+                type="button"
+                color={tab === "tree" ? "blue" : "gray"}
+                text="Visual Builder"
+                onClick={() => handleTabChange("tree")}
+              />
+              <Button
+                type="button"
+                color={tab === "json" ? "blue" : "gray"}
+                text="Raw JSON"
+                onClick={() => handleTabChange("json")}
+              />
             </div>
 
             <div className="flex-1 overflow-auto">
               {tab === "json" ? (
                   <div className="relative h-full">
-                    {!touched && rawJson === "" && (
-                        <pre className="absolute inset-0 text-gray-400 pointer-events-none p-2 whitespace-pre-wrap font-mono">
-                  {defaultExample}
-                </pre>
-                    )}
                     <textarea
-                        className="w-full h-full border p-2 font-mono resize-none bg-transparent relative z-10"
+                        className="w-full h-full border p-2 font-mono resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         value={rawJson}
                         onChange={handleChange}
                         onFocus={() => setTouched(true)}
+                        placeholder={defaultExample}
                     />
+                    <div className="text-xs text-gray-600 mt-2">
+                      <strong>Tip:</strong> Edit JSON directly or switch to Visual Builder to use the schema editor.
+                    </div>
                   </div>
               ) : schemeData ? (
-                  <Scheme
-                      topicName={name || ""}
-                      editable={false}
-                      data={schemeData}
-                      publishable={true}
-                      onChangePublish={setSchemeDataToPublish}
-                  />
+                  <div>
+                    <Scheme
+                        key={schemeKey} // Force re-render when JSON is parsed
+                        topicName={name || ""}
+                        editable={false}
+                        data={schemeData}
+                        publishable={true}
+                        onChangePublish={handleTreeDataChange}
+                        publishDataArray={(() => {
+                          // Use schemeDataToPublish if available, otherwise use schemeDataRef
+                          const dataToUse = schemeDataToPublish.length > 0 ? schemeDataToPublish : schemeDataRef.current;
+                          return dataToUse.length > 0 ? dataToUse : undefined;
+                        })()}
+                    />
+                    <div className="text-xs text-gray-600 mt-2">
+                      <strong>Tip:</strong> Fill in the schema fields or switch to Raw JSON to edit directly.
+                    </div>
+                  </div>
               ) : (
                   <div className="flex items-center justify-center h-full">
                     Failed to load scheme details. Please try again later.
@@ -590,39 +1186,140 @@ const TopicDetail = () => {
               const { name, metadata } = child;
 
               if (metadata.type === "string") {
-                // Only include non-empty string values
+                // Only include non-empty string values with robust filtering
                 const value = metadata.value ?? "";
-                if (value !== "") {
-                  childObject[name] = value;
+                const stringValue = typeof value === 'string' ? value : String(value);
+                if (stringValue.trim() !== "") {
+                  childObject[name] = stringValue;
                 }
               } else if (metadata.type === "object") {
                 // For objects, recursively collect child values
                 const objectValue = collectChildValues(child.id);
-                // Only include non-empty objects
+                // Only include objects with meaningful content (non-empty and not just empty strings)
                 if (Object.keys(objectValue).length > 0) {
-                  // Special handling for Kafka "value" field - stringify it
-                  if (isKafkaConnection && name === "value") {
-                    childObject[name] = JSON.stringify(objectValue);
-                  } else {
-                    childObject[name] = objectValue;
+                  // Check if the object contains only empty values
+                  const hasNonEmptyValues = Object.values(objectValue).some(val => {
+                    if (typeof val === 'string') {
+                      return val.trim() !== "";
+                    } else if (Array.isArray(val)) {
+                      return val.length > 0;
+                    } else if (typeof val === 'object' && val !== null) {
+                      return Object.keys(val).length > 0;
+                    }
+                    return val != null;
+                  });
+                  
+                  if (hasNonEmptyValues) {
+                    // Special handling for Kafka "value" field - stringify it
+                    if (isKafkaConnection && name === "value") {
+                      childObject[name] = JSON.stringify(objectValue);
+                    } else {
+                      childObject[name] = objectValue;
+                    }
                   }
                 }
               } else if (metadata.type === "array") {
                 if (metadata.array === "string") {
-                  // For string arrays, use the value directly from metadata
-                  const arrayValue = Array.isArray(metadata.value) ? metadata.value.filter((item: any) => item !== "") : [];
-                  // Only include non-empty arrays
-                  if (arrayValue.length > 0) {
-                    childObject[name] = arrayValue;
+                  // For string arrays, only process if there's actual content
+                  if (Array.isArray(metadata.value) && metadata.value.length > 0) {
+                    const arrayValue = metadata.value.filter((item: any) => {
+                      if (typeof item === 'string') {
+                        return item && item.trim() !== "";
+                      }
+                      return item != null && String(item).trim() !== "";
+                    });
+                    // Only include non-empty arrays with meaningful content
+                    if (arrayValue.length > 0) {
+                      childObject[name] = arrayValue;
+                    }
                   }
                 } else if (metadata.array && ["document", "object"].includes(metadata.array)) {
-                  // For document/object arrays, use the value from metadata
-                  const arrayValue = Array.isArray(metadata.value) ? metadata.value.filter((item: any) =>
-                    item && typeof item === 'object' && Object.keys(item).length > 0
-                  ) : [];
-                  // Only include non-empty arrays
-                  if (arrayValue.length > 0) {
-                    childObject[name] = arrayValue;
+                  // For document/object arrays, collect values from actual replica structures in the tree
+                  const replicaNodes = schemeDataToPublish.filter(node => node.metadata.replicaOf === child.id && node.metadata.type === "object");
+                  
+                  if (replicaNodes.length > 0) {
+                    const arrayValue = replicaNodes.map(replicaNode => {
+                      // Collect values from replica's children
+                      const replicaObject: Record<string, unknown> = {};
+                      const replicaChildren = replicaNode.children
+                        ?.map(childId => schemeDataToPublish.find(node => node.id === childId))
+                        .filter((node): node is TreeNode => node != null) || [];
+                      
+                      // Get all children that belong to nested objects to skip them in main processing
+                      const nestedObjectChildren = new Set<number>();
+                      replicaChildren.forEach(child => {
+                        if (child.metadata.type === "object" && child.children) {
+                          child.children.forEach(nestedChildId => nestedObjectChildren.add(nestedChildId));
+                        }
+                      });
+                      
+                      replicaChildren.forEach(replicaChild => {
+                        // Skip children that belong to nested objects - they'll be processed within their parent object context
+                        if (nestedObjectChildren.has(replicaChild.id)) {
+                          return;
+                        }
+                        
+                        const { name: fieldName, metadata: replicaMetadata } = replicaChild;
+                        
+                        if (replicaMetadata.type === "string") {
+                          const value = replicaMetadata.value ?? "";
+                          const stringValue = typeof value === 'string' ? value : String(value);
+                          if (stringValue.trim() !== "") {
+                            replicaObject[fieldName] = stringValue;
+                          }
+                        } else if (replicaMetadata.type === "array" && replicaMetadata.array === "string") {
+                          if (Array.isArray(replicaMetadata.value) && replicaMetadata.value.length > 0) {
+                            const arrayValue = replicaMetadata.value.filter((v: any) => {
+                              if (typeof v === 'string') return v.trim() !== "";
+                              return v != null && String(v).trim() !== "";
+                            });
+                            if (arrayValue.length > 0) {
+                              replicaObject[fieldName] = arrayValue;
+                            }
+                          }
+                        } else if (replicaMetadata.type === "object") {
+                          // For nested objects within replicas, collect from their children
+                          const nestedObjectValue: Record<string, unknown> = {};
+                          const nestedChildren = replicaChild.children
+                            ?.map(childId => schemeDataToPublish.find(node => node.id === childId))
+                            .filter((node): node is TreeNode => node != null) || [];
+                          
+                          nestedChildren.forEach(nestedChild => {
+                            const { name: nestedFieldName, metadata: nestedMetadata } = nestedChild;
+                            
+                            if (nestedMetadata.type === "string") {
+                              const value = nestedMetadata.value ?? "";
+                              const stringValue = typeof value === 'string' ? value : String(value);
+                              if (stringValue.trim() !== "") {
+                                nestedObjectValue[nestedFieldName] = stringValue;
+                              }
+                            } else if (nestedMetadata.type === "array" && nestedMetadata.array === "string") {
+                              if (Array.isArray(nestedMetadata.value) && nestedMetadata.value.length > 0) {
+                                const arrayValue = nestedMetadata.value.filter(v => {
+                                  if (typeof v === 'string') return v.trim() !== "";
+                                  return v != null && String(v).trim() !== "";
+                                });
+                                if (arrayValue.length > 0) {
+                                  nestedObjectValue[nestedFieldName] = arrayValue;
+                                }
+                              }
+                            }
+                            // Handle further nesting if needed
+                          });
+                          
+                          if (Object.keys(nestedObjectValue).length > 0) {
+                            replicaObject[fieldName] = nestedObjectValue;
+                          }
+                        }
+                      });
+                      
+                      return replicaObject;
+                    }).filter((item: any) => Object.keys(item).length > 0); // Remove empty objects
+                    
+                    // Only include non-empty arrays with meaningful content
+                    if (arrayValue.length > 0) {
+                      childObject[name] = arrayValue;
+                    }
                   }
                 }
               }
