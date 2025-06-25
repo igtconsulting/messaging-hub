@@ -19,15 +19,24 @@ function handleChildrenRecursive(
   const jsonStructure: Record<string, JSONTreeNode> = {};
   const required: string[] = [];
 
-  const currentChildren = treeDataToConvert.filter(
-    (el) => el.parent == parentId
-  );
+  // Get children in the order specified by the parent's children array
+  const parent = treeDataToConvert.find(el => el.id === parentId);
+  const currentChildren = parent?.children
+    ?.map(childId => treeDataToConvert.find(node => node.id === childId))
+    .filter((node): node is TreeNode => node != null) ||
+    treeDataToConvert.filter((el) => el.parent == parentId);
 
+  // Process children in the correct order and build object with ordered keys
+  const orderedEntries: Array<[string, JSONTreeNode]> = [];
+  
   currentChildren.forEach((el) => {
     if (el.metadata.required == "yes") required.push(el.name);
+    
+    let nodeValue: JSONTreeNode;
+    
     if (el.metadata.type === "object") {
       const parentData = handleChildrenRecursive(treeDataToConvert, el.id);
-      jsonStructure[el.name] = {
+      nodeValue = {
         type: ["null", el.metadata.type],
         properties: parentData.jsonStructure,
         additionalProperties:
@@ -37,7 +46,7 @@ function handleChildrenRecursive(
     } else if (el.metadata.type === "array") {
       if (el.metadata.array == "document") {
         const parentData = handleChildrenRecursive(treeDataToConvert, el.id);
-        jsonStructure[el.name] = {
+        nodeValue = {
           type: ["null", el.metadata.type],
           items: [
             {
@@ -49,19 +58,25 @@ function handleChildrenRecursive(
           ],
         };
       } else {
-        jsonStructure[el.name] = {
+        nodeValue = {
           type: ["null", el.metadata.type],
           items: [{ type: "string" }],
         };
       }
     } else {
-      jsonStructure[el.name] = {
+      nodeValue = {
         type: ["null", el.metadata.type],
       };
     }
+    
+    // Add to ordered entries instead of directly to object
+    orderedEntries.push([el.name, nodeValue]);
   });
 
-  return { jsonStructure, required };
+  // Create object from ordered entries to preserve insertion order
+  const orderedJsonStructure = Object.fromEntries(orderedEntries);
+
+  return { jsonStructure: orderedJsonStructure, required };
 }
 
 // output: Array structure of the schema without children filled with children
@@ -191,7 +206,7 @@ export function convertToArrayStructure(
     return availableId;
   }
   if (jsonStructure.properties) {
-    handleChildren(jsonStructure.properties, (jsonStructure as JSONTreeNode & { required?: string[] }).required || [], rootId);
+    handleChildren(jsonStructure.properties as unknown as Record<string, JSONTreeNode>, [], rootId);
   }
   return fillChildren(arrayStructure);
 }

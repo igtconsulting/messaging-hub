@@ -180,10 +180,10 @@ const TopicDetail = () => {
         const childObject: Record<string, unknown> = {};
         const isKafkaConnection = topicDetails?.connection_type?.toLowerCase() === "kafka";
   
-        // Get direct children that are not replicas
-        const children = schemeDataToPublish.filter((node) =>
-          node.parent === parentId && !node.metadata.replicaOf
-        );
+        // Get direct children in the order they appear in the parent's children array
+        const children = parentNode?.children
+          ?.map(childId => schemeDataToPublish.find(node => node.id === childId))
+          .filter((node): node is TreeNode => node != null && !node.metadata.replicaOf) || [];
   
         for (const child of children) {
           const { name, metadata } = child;
@@ -574,16 +574,17 @@ const TopicDetail = () => {
           const collectChildValues = (parentId: number): Record<string, unknown> => {
             if (!schemeDataToPublish) return {};
             
-            const parentNode = schemeDataToPublish.find((node) => node.id === parentId);
-            if (!parentNode) return {};
+            const thisParentNode = schemeDataToPublish.find((node) => node.id === parentId);
+            if (!thisParentNode) return {};
 
             const childObject: Record<string, unknown> = {};
             const isKafkaConnection = topicDetails?.connection_type?.toLowerCase() === "kafka";
 
-            // Get direct children that are not replicas
-            const children = schemeDataToPublish.filter((node) =>
-              node.parent === parentId && !node.metadata.replicaOf
-            );
+            // Get direct children in the order they appear in the parent's children array
+            const currentParentNode = schemeDataToPublish.find((node) => node.id === parentId);
+            const children = currentParentNode?.children
+              ?.map(childId => schemeDataToPublish.find(node => node.id === childId))
+              .filter((node): node is TreeNode => node != null && !node.metadata.replicaOf) || [];
 
             for (const child of children) {
               const { name, metadata } = child;
@@ -609,14 +610,14 @@ const TopicDetail = () => {
               } else if (metadata.type === "array") {
                 if (metadata.array === "string") {
                   // For string arrays, use the value directly from metadata
-                  const arrayValue = Array.isArray(metadata.value) ? metadata.value.filter(item => item !== "") : [];
+                  const arrayValue = Array.isArray(metadata.value) ? metadata.value.filter((item: any) => item !== "") : [];
                   // Only include non-empty arrays
                   if (arrayValue.length > 0) {
                     childObject[name] = arrayValue;
                   }
                 } else if (metadata.array && ["document", "object"].includes(metadata.array)) {
                   // For document/object arrays, use the value from metadata
-                  const arrayValue = Array.isArray(metadata.value) ? metadata.value.filter(item =>
+                  const arrayValue = Array.isArray(metadata.value) ? metadata.value.filter((item: any) =>
                     item && typeof item === 'object' && Object.keys(item).length > 0
                   ) : [];
                   // Only include non-empty arrays

@@ -44,13 +44,26 @@ const SchemeTree = forwardRef<SchemeTreeRef, SchemeTreeProps>(({
   const [editingNode, setEditingNode] = useState<number | null>(null);
   const [creatingChildFor, setCreatingChildFor] = useState<number | null>(null);
   const [localPublishData, setLocalPublishData] = useState<TreeNode[]>(publishData || []);
+  const [localEditableData, setLocalEditableData] = useState<TreeNode[]>(treeData || []);
   const [inputValues, setInputValues] = useState<Record<number, string>>({});
   const [arrayInputs, setArrayInputs] = useState<Record<number, string>>({});
   const [showDocumentPreview, setShowDocumentPreview] = useState<number | null>(null);
+  const [draggedNode, setDraggedNode] = useState<number | null>(null);
+  const [dragOverNode, setDragOverNode] = useState<number | null>(null);
+  const [insertPosition, setInsertPosition] = useState<'before' | 'after' | 'into' | null>(null);
+  const [forceRenderCounter, setForceRenderCounter] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Keep localEditableData in sync with treeData prop (except during drag operations)
+  useEffect(() => {
+    if (!publishable && !isDragging) {
+      setLocalEditableData([...treeData]);
+    }
+  }, [treeData, publishable, isDragging]);
 
   // Auto-expand all nodes when tree loads
   useEffect(() => {
-    const currentData = publishable ? localPublishData : treeData;
+    const currentData = publishable ? localPublishData : (editable ? localEditableData : treeData);
     const allNodeIds = new Set<number>();
     
     // Collect all node IDs recursively
@@ -66,7 +79,7 @@ const SchemeTree = forwardRef<SchemeTreeRef, SchemeTreeProps>(({
     
     collectIds(currentData);
     setExpandedNodes(allNodeIds);
-  }, [treeData, publishable]);
+  }, [treeData, localEditableData, publishable, editable]);
 
   // Update local publish data
   useEffect(() => {
@@ -106,7 +119,22 @@ const SchemeTree = forwardRef<SchemeTreeRef, SchemeTreeProps>(({
   };
 
   const getChildren = (parentId: number, data: TreeNode[]) => {
-    return data.filter(node => node.parent === parentId);
+    // Find the parent node to get the correct order from its children array
+    const parent = data.find(node => node.id === parentId);
+    if (!parent || !parent.children) {
+      return data.filter(node => node.parent === parentId);
+    }
+    
+    // Return children in the order specified by parent.children array
+    const orderedChildren: TreeNode[] = [];
+    parent.children.forEach(childId => {
+      const child = data.find(node => node.id === childId);
+      if (child) {
+        orderedChildren.push(child);
+      }
+    });
+    
+    return orderedChildren;
   };
 
   const updateInputValue = (nodeId: number, value: string) => {
@@ -787,6 +815,257 @@ const SchemeTree = forwardRef<SchemeTreeRef, SchemeTreeProps>(({
     }
   };
 
+  // Drag and drop handlers
+  const handleDragStart = (e: React.DragEvent, nodeId: number) => {
+    setDraggedNode(nodeId);
+    setIsDragging(true);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', nodeId.toString());
+  };
+
+  const handleDragOver = (e: React.DragEvent, nodeId: number) => {
+    e.preventDefault();
+    
+    if (!draggedNode || draggedNode === nodeId) {
+      e.dataTransfer.dropEffect = 'none';
+      setDragOverNode(null);
+      setInsertPosition(null);
+      return;
+    }
+
+    const currentData = publishable ? localPublishData : treeData;
+    const targetNode = currentData.find(n => n.id === nodeId);
+    const draggedNodeData = currentData.find(n => n.id === draggedNode);
+    
+    if (!targetNode || !draggedNodeData) {
+      setDragOverNode(null);
+      setInsertPosition(null);
+      return;
+    }
+
+    // Don't allow dropping a parent into its own child
+    const isChildOfDragged = (nodeId: number, parentId: number): boolean => {
+      const node = currentData.find(n => n.id === nodeId);
+      if (!node || node.parent === 0) return false;
+      if (node.parent === parentId) return true;
+      return isChildOfDragged(node.parent!, parentId);
+    };
+
+    if (isChildOfDragged(nodeId, draggedNode)) {
+      e.dataTransfer.dropEffect = 'none';
+      setDragOverNode(null);
+      setInsertPosition(null);
+      return;
+    }
+    
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    const height = rect.height;
+    
+    // Use larger threshold zones for easier targeting
+    const CONTAINER_THRESHOLD = 15; // pixels from top/bottom edge for containers
+    const REGULAR_THRESHOLD = height * 0.3; // 30% from top/bottom for regular nodes
+    
+    // For containers (objects/document arrays), allow dropping into them
+    const isContainer = targetNode.metadata.type === "object" ||
+                       (targetNode.metadata.type === "array" && targetNode.metadata.array === "document");
+    
+    let position: 'before' | 'after' | 'into';
+    
+    if (isContainer) {
+      if (y < CONTAINER_THRESHOLD) {
+        position = 'before';
+        e.dataTransfer.dropEffect = 'move';
+      } else if (y > height - CONTAINER_THRESHOLD) {
+        position = 'after';
+        e.dataTransfer.dropEffect = 'move';
+      } else {
+        position = 'into';
+        e.dataTransfer.dropEffect = 'copy';
+      }
+    } else {
+      // For regular nodes, use generous zones for before/after
+      if (y < REGULAR_THRESHOLD) {
+        position = 'before';
+      } else if (y > height - REGULAR_THRESHOLD) {
+        position = 'after';
+      } else {
+        // Default to before for middle zone on regular nodes
+        position = 'before';
+      }
+      e.dataTransfer.dropEffect = 'move';
+    }
+    
+    setInsertPosition(position);
+    setDragOverNode(nodeId);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    // Don't clear drag state on drag leave - let drag over handle it
+    // This prevents flickering and ensures drag over events work properly
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent, targetNodeId: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!draggedNode || draggedNode === targetNodeId || !insertPosition) {
+      setDraggedNode(null);
+      setDragOverNode(null);
+      setInsertPosition(null);
+      setIsDragging(false);
+      return;
+    }
+
+    const currentData = publishable ? localPublishData : treeData;
+    const draggedNodeData = currentData.find(n => n.id === draggedNode);
+    const targetNodeData = currentData.find(n => n.id === targetNodeId);
+    
+    if (!draggedNodeData || !targetNodeData) {
+      setDraggedNode(null);
+      setDragOverNode(null);
+      setInsertPosition(null);
+      setIsDragging(false);
+      return;
+    }
+
+    // Don't allow dropping a parent into its own child
+    const isChildOfDragged = (nodeId: number, parentId: number): boolean => {
+      const node = currentData.find(n => n.id === nodeId);
+      if (!node || node.parent === 0) return false;
+      if (node.parent === parentId) return true;
+      return isChildOfDragged(node.parent!, parentId);
+    };
+
+    if (isChildOfDragged(targetNodeId, draggedNode)) {
+      setDraggedNode(null);
+      setDragOverNode(null);
+      setInsertPosition(null);
+      setIsDragging(false);
+      return;
+    }
+
+    // Move node based on insertion position
+    moveNode(draggedNode, targetNodeId, insertPosition);
+    setDraggedNode(null);
+    setDragOverNode(null);
+    setInsertPosition(null);
+    setIsDragging(false);
+  };
+
+  const moveNode = (draggedId: number, targetId: number, position: 'before' | 'after' | 'into') => {
+    // IMPORTANT: Capture original state BEFORE making any changes (DEEP COPY)
+    const originalData = publishable ?
+      JSON.parse(JSON.stringify(localPublishData)) :
+      JSON.parse(JSON.stringify(localEditableData));
+    
+    const updateFunction = publishable ? setLocalPublishData : setLocalEditableData;
+    let updatedDataForComparison: TreeNode[] = [];
+
+    updateFunction((prev: TreeNode[]) => {
+      const newData = [...prev];
+      const draggedNode = newData.find(n => n.id === draggedId);
+      const targetNode = newData.find(n => n.id === targetId);
+      
+      if (!draggedNode || !targetNode) {
+        return prev;
+      }
+
+      // Determine new parent and position based on insertion type
+      let newParentId: number;
+      let insertPos: number;
+
+      if (position === 'into') {
+        // Move into the target container
+        newParentId = targetId;
+        insertPos = targetNode.children.length; // Add at end
+      } else {
+        // Move as sibling (before or after target)
+        newParentId = targetNode.parent!;
+        const newParent = newData.find(n => n.id === newParentId);
+        if (newParent) {
+          const targetIndex = newParent.children.indexOf(targetId);
+          
+          // IMPORTANT: Calculate insertion position BEFORE removing the dragged node
+          // to avoid index shift issues when reordering within the same parent
+          if (position === 'before') {
+            insertPos = targetIndex; // Insert before target
+          } else {
+            insertPos = targetIndex + 1; // Insert after target
+          }
+          
+          // If moving within the same parent and the dragged node is before the target,
+          // we need to adjust the insertion position because removing the dragged node
+          // will shift all subsequent indices down by 1
+          if (draggedNode.parent === newParentId) {
+            const draggedIndex = newParent.children.indexOf(draggedId);
+            if (draggedIndex < targetIndex) {
+              insertPos -= 1; // Adjust for the removal
+            }
+          }
+        } else {
+          insertPos = 0;
+        }
+      }
+
+      // Create new objects to ensure React detects the change
+      const updatedData = newData.map(node => {
+        if (node.id === draggedNode.parent && draggedNode.parent === newParentId) {
+          // Same parent - handle remove and add in one operation
+          const newChildren = [...node.children];
+          // Remove the dragged item
+          const draggedIndex = newChildren.indexOf(draggedId);
+          newChildren.splice(draggedIndex, 1);
+          // Insert at new position
+          newChildren.splice(insertPos, 0, draggedId);
+          return { ...node, children: newChildren };
+        } else if (node.id === draggedNode.parent) {
+          // Remove from old parent - create new object
+          const newChildren = node.children.filter(id => id !== draggedId);
+          return { ...node, children: newChildren };
+        } else if (node.id === newParentId) {
+          // Add to new parent - create new object
+          const newChildren = [...node.children];
+          newChildren.splice(insertPos, 0, draggedId);
+          return { ...node, children: newChildren };
+        } else if (node.id === draggedId && draggedNode.parent !== newParentId) {
+          // Update dragged node's parent only if moving between different parents
+          return { ...node, parent: newParentId };
+        }
+        return node;
+      });
+
+      updatedDataForComparison = updatedData; // Store for comparison
+      return updatedData;
+    });
+
+    // Force a re-render to ensure UI updates
+    setForceRenderCounter(prev => prev + 1);
+    
+    // For editable mode, we also need to call editNode for backend persistence
+    if (!publishable && editNode) {
+      // Use the stored updated data instead of waiting for state
+      const updatedNodes = new Set<number>();
+      
+      // Find nodes that changed by comparing with the original data we captured
+      updatedDataForComparison.forEach((node: TreeNode) => {
+        const originalNode = originalData.find((n: TreeNode) => n.id === node.id);
+        if (originalNode && JSON.stringify(originalNode.children) !== JSON.stringify(node.children)) {
+          updatedNodes.add(node.id);
+        }
+      });
+      
+      // Call editNode for each modified node
+      updatedNodes.forEach(nodeId => {
+        const nodeToUpdate = updatedDataForComparison.find((n: TreeNode) => n.id === nodeId);
+        if (nodeToUpdate) {
+          editNode(nodeToUpdate);
+        }
+      });
+    }
+  };
+
 
   // Render icon based on node type and expansion state
   const renderIcon = (node: TreeNode, isExpanded: boolean) => {
@@ -798,7 +1077,7 @@ const SchemeTree = forwardRef<SchemeTreeRef, SchemeTreeProps>(({
 
   // Render a single tree node
   const renderNode = (node: TreeNode, level: number = 0): React.ReactNode => {
-    const currentData = publishable ? localPublishData : treeData;
+    const currentData = publishable ? localPublishData : (editable ? localEditableData : treeData);
     const children = getChildren(node.id, currentData);
     const isExpanded = expandedNodes.has(node.id);
     const hasChildren = children.length > 0;
@@ -830,8 +1109,29 @@ const SchemeTree = forwardRef<SchemeTreeRef, SchemeTreeProps>(({
     // Apply cyan background color for all elements that are part of array entries
     const bgColor = isArrayEntry ? "bg-cyan-100 border-l-4 border-cyan-500" : "bg-white";
 
+    // Check if this node can be dragged (editable mode, not root node, not array entries)
+    const canDrag = editable && node.parent !== 0 && !node.metadata.replicaOf && !node.metadata.originalKey;
+    
+    // Visual feedback for drag states
+    let dragClasses = '';
+    if (draggedNode === node.id) {
+      dragClasses = 'opacity-50';
+    } else if (dragOverNode === node.id) {
+      // Different visual feedback based on insertion position
+      if (insertPosition === 'into') {
+        dragClasses = 'ring-2 ring-green-500 bg-green-50'; // Into container
+      } else {
+        dragClasses = 'ring-2 ring-blue-500'; // Before/after (reorder)
+      }
+    }
+
     return (
       <div key={node.id} style={{ marginLeft: level * 20 }}>
+        {/* Insertion indicator BEFORE */}
+        {dragOverNode === node.id && insertPosition === 'before' && (
+          <div className="h-0.5 bg-blue-500 mx-3 mb-1 rounded" />
+        )}
+        
         {editingNode === node.id ? (
           <div className="bg-white rounded-md p-2 my-1">
             <CreateNodeForm
@@ -842,7 +1142,14 @@ const SchemeTree = forwardRef<SchemeTreeRef, SchemeTreeProps>(({
             />
           </div>
         ) : (
-          <div className={`flex items-center justify-between ${bgColor} rounded-md px-3 py-2 my-1`}>
+          <div
+            className={`flex items-center justify-between ${bgColor} rounded-md px-3 py-2 my-1 ${dragClasses} ${canDrag ? 'cursor-move' : ''}`}
+            draggable={canDrag}
+            onDragStart={(e) => canDrag && handleDragStart(e, node.id)}
+            onDragOver={(e) => handleDragOver(e, node.id)}
+            onDragLeave={(e) => handleDragLeave(e)}
+            onDrop={(e) => handleDrop(e, node.id)}
+          >
             <div
               className="flex items-center gap-2 flex-1 cursor-pointer"
               onClick={() => hasChildren && toggleExpansion(node.id)}
@@ -886,6 +1193,11 @@ const SchemeTree = forwardRef<SchemeTreeRef, SchemeTreeProps>(({
           <div>
             {children.map(child => renderNode(child, level + 1))}
           </div>
+        )}
+        
+        {/* Insertion indicator AFTER */}
+        {dragOverNode === node.id && insertPosition === 'after' && (
+          <div className="h-0.5 bg-blue-500 mx-3 mt-1 rounded" />
         )}
       </div>
     );
@@ -1281,7 +1593,7 @@ const SchemeTree = forwardRef<SchemeTreeRef, SchemeTreeProps>(({
     );
   };
 
-  const currentData = publishable ? localPublishData : treeData;
+  const currentData = publishable ? localPublishData : (editable ? localEditableData : treeData);
   const rootNodes = getRootNodes(currentData);
 
   // Expose methods to parent component
@@ -1326,7 +1638,7 @@ const SchemeTree = forwardRef<SchemeTreeRef, SchemeTreeProps>(({
   }));
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-1" key={forceRenderCounter}>
       {rootNodes.map(node => renderNode(node))}
     </div>
   );
