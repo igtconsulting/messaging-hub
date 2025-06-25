@@ -98,6 +98,7 @@ const FilterBuilder = forwardRef<FilterBuilderRef, FilterBuilderProps>(({
   const [draggedElement, setDraggedElement] = useState<{id: string, type: 'condition' | 'group', parentId: string} | null>(null);
   const [dragOverTarget, setDragOverTarget] = useState<{parentId: string, position: number} | null>(null);
   const [highlightedGroup, setHighlightedGroup] = useState<string | null>(null);
+  const [autoScrollInterval, setAutoScrollInterval] = useState<number | null>(null);
   const [currentSchemaKey, setCurrentSchemaKey] = useState<string>('');
   const [groupColors, setGroupColors] = useState<Record<string, string>>({});
   const [showColorPicker, setShowColorPicker] = useState<string | null>(null);
@@ -714,6 +715,63 @@ const FilterBuilder = forwardRef<FilterBuilderRef, FilterBuilderProps>(({
     }));
   };
 
+  // Auto-scroll functionality for drag and drop
+  const handleAutoScroll = useCallback((clientY: number) => {
+    const SCROLL_ZONE = 50; // pixels from top/bottom edge to trigger scroll
+    const SCROLL_SPEED = 10; // pixels per scroll
+    
+    const viewportHeight = window.innerHeight;
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    
+    // Clear any existing auto-scroll
+    if (autoScrollInterval) {
+      clearInterval(autoScrollInterval);
+      setAutoScrollInterval(null);
+    }
+    
+    let shouldScroll = false;
+    let scrollDirection = 0;
+    
+    // Check if near top edge
+    if (clientY < SCROLL_ZONE) {
+      shouldScroll = true;
+      scrollDirection = -SCROLL_SPEED;
+    }
+    // Check if near bottom edge
+    else if (clientY > viewportHeight - SCROLL_ZONE) {
+      shouldScroll = true;
+      scrollDirection = SCROLL_SPEED;
+    }
+    
+    if (shouldScroll) {
+      const interval = setInterval(() => {
+        const currentScrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const maxScrollTop = document.documentElement.scrollHeight - window.innerHeight;
+        
+        // Check bounds
+        if ((scrollDirection < 0 && currentScrollTop <= 0) ||
+            (scrollDirection > 0 && currentScrollTop >= maxScrollTop)) {
+          clearInterval(interval);
+          setAutoScrollInterval(null);
+          return;
+        }
+        
+        window.scrollBy(0, scrollDirection);
+      }, 16); // ~60fps
+      
+      setAutoScrollInterval(interval);
+    }
+  }, [autoScrollInterval]);
+
+  // Clear auto-scroll on component unmount
+  useEffect(() => {
+    return () => {
+      if (autoScrollInterval) {
+        clearInterval(autoScrollInterval);
+      }
+    };
+  }, [autoScrollInterval]);
+
   // Drag and Drop Functions
   const handleDragStart = (e: React.DragEvent, elementId: string, elementType: 'condition' | 'group', parentId: string) => {
     setDraggedElement({ id: elementId, type: elementType, parentId });
@@ -725,6 +783,9 @@ const FilterBuilder = forwardRef<FilterBuilderRef, FilterBuilderProps>(({
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     setDragOverTarget({ parentId: targetParentId, position });
+    
+    // Trigger auto-scroll based on mouse position
+    handleAutoScroll(e.clientY);
   };
 
   const handleDragLeave = (e: React.DragEvent) => {
@@ -750,6 +811,12 @@ const FilterBuilder = forwardRef<FilterBuilderRef, FilterBuilderProps>(({
   const handleDragEnd = () => {
     setDraggedElement(null);
     setDragOverTarget(null);
+    
+    // Clear auto-scroll
+    if (autoScrollInterval) {
+      clearInterval(autoScrollInterval);
+      setAutoScrollInterval(null);
+    }
   };
 
   // Move element from one parent to another

@@ -53,6 +53,7 @@ const SchemeTree = forwardRef<SchemeTreeRef, SchemeTreeProps>(({
   const [insertPosition, setInsertPosition] = useState<'before' | 'after' | 'into' | null>(null);
   const [forceRenderCounter, setForceRenderCounter] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [autoScrollInterval, setAutoScrollInterval] = useState<number | null>(null);
 
   // Keep localEditableData in sync with treeData prop (except during drag operations)
   useEffect(() => {
@@ -815,6 +816,63 @@ const SchemeTree = forwardRef<SchemeTreeRef, SchemeTreeProps>(({
     }
   };
 
+  // Auto-scroll functionality for drag and drop
+  const handleAutoScroll = useCallback((clientY: number) => {
+    const SCROLL_ZONE = 50; // pixels from top/bottom edge to trigger scroll
+    const SCROLL_SPEED = 10; // pixels per scroll
+    
+    const viewportHeight = window.innerHeight;
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    
+    // Clear any existing auto-scroll
+    if (autoScrollInterval) {
+      clearInterval(autoScrollInterval);
+      setAutoScrollInterval(null);
+    }
+    
+    let shouldScroll = false;
+    let scrollDirection = 0;
+    
+    // Check if near top edge
+    if (clientY < SCROLL_ZONE) {
+      shouldScroll = true;
+      scrollDirection = -SCROLL_SPEED;
+    }
+    // Check if near bottom edge
+    else if (clientY > viewportHeight - SCROLL_ZONE) {
+      shouldScroll = true;
+      scrollDirection = SCROLL_SPEED;
+    }
+    
+    if (shouldScroll) {
+      const interval = setInterval(() => {
+        const currentScrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const maxScrollTop = document.documentElement.scrollHeight - window.innerHeight;
+        
+        // Check bounds
+        if ((scrollDirection < 0 && currentScrollTop <= 0) ||
+            (scrollDirection > 0 && currentScrollTop >= maxScrollTop)) {
+          clearInterval(interval);
+          setAutoScrollInterval(null);
+          return;
+        }
+        
+        window.scrollBy(0, scrollDirection);
+      }, 16); // ~60fps
+      
+      setAutoScrollInterval(interval);
+    }
+  }, [autoScrollInterval]);
+
+  // Clear auto-scroll on component unmount
+  useEffect(() => {
+    return () => {
+      if (autoScrollInterval) {
+        clearInterval(autoScrollInterval);
+      }
+    };
+  }, [autoScrollInterval]);
+
   // Drag and drop handlers
   const handleDragStart = (e: React.DragEvent, nodeId: number) => {
     setDraggedNode(nodeId);
@@ -898,6 +956,9 @@ const SchemeTree = forwardRef<SchemeTreeRef, SchemeTreeProps>(({
     
     setInsertPosition(position);
     setDragOverNode(nodeId);
+    
+    // Trigger auto-scroll based on mouse position
+    handleAutoScroll(e.clientY);
   };
 
   const handleDragLeave = (e: React.DragEvent) => {
@@ -906,9 +967,28 @@ const SchemeTree = forwardRef<SchemeTreeRef, SchemeTreeProps>(({
     e.preventDefault();
   };
 
+  const handleDragEnd = () => {
+    setDraggedNode(null);
+    setDragOverNode(null);
+    setInsertPosition(null);
+    setIsDragging(false);
+    
+    // Clear auto-scroll
+    if (autoScrollInterval) {
+      clearInterval(autoScrollInterval);
+      setAutoScrollInterval(null);
+    }
+  };
+
   const handleDrop = (e: React.DragEvent, targetNodeId: number) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    // Clear auto-scroll
+    if (autoScrollInterval) {
+      clearInterval(autoScrollInterval);
+      setAutoScrollInterval(null);
+    }
     
     if (!draggedNode || draggedNode === targetNodeId || !insertPosition) {
       setDraggedNode(null);
@@ -1149,6 +1229,7 @@ const SchemeTree = forwardRef<SchemeTreeRef, SchemeTreeProps>(({
             onDragOver={(e) => handleDragOver(e, node.id)}
             onDragLeave={(e) => handleDragLeave(e)}
             onDrop={(e) => handleDrop(e, node.id)}
+            onDragEnd={handleDragEnd}
           >
             <div
               className="flex items-center gap-2 flex-1 cursor-pointer"
