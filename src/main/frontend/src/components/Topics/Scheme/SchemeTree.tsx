@@ -1519,6 +1519,9 @@ const SchemeTree = forwardRef<SchemeTreeRef, SchemeTreeProps>(({
     }
 
     if (node.metadata.type === "object" && node.metadata.value) {
+      // Check if this is a document array entry (has replicaOf property)
+      const isDocumentArrayEntry = node.metadata.replicaOf !== undefined;
+      
       return (
         <div className="flex items-center gap-2 relative">
           <Button
@@ -1531,6 +1534,18 @@ const SchemeTree = forwardRef<SchemeTreeRef, SchemeTreeProps>(({
             className="p-1"
             onClick={() => setShowDocumentPreview(prev => prev === node.id ? null : node.id)}
           />
+          {isDocumentArrayEntry && (
+            <Button
+              type="button"
+              color="red"
+              icon={DeleteTrash}
+              iconPosition="center"
+              tableButton={true}
+              padding={false}
+              className="p-1"
+              onClick={() => deleteFromArray(node.id)}
+            />
+          )}
           {showDocumentPreview === node.id && (
             <div className="absolute top-8 right-0 bg-white border rounded-lg shadow-lg p-4 z-50 min-w-96">
               <div className="flex justify-between items-center mb-2">

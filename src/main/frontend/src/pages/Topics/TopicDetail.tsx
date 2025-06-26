@@ -239,7 +239,12 @@ const TopicDetail = () => {
               }
             } else if (metadata.array && ["document", "object"].includes(metadata.array)) {
               // For document/object arrays, collect values from actual replica structures in the tree
-              const replicaNodes = schemeDataToPublish.filter(node => node.metadata.replicaOf === child.id && node.metadata.type === "object");
+              // Only include nodes that are direct replicas (parent is the array itself), not nested objects
+              const replicaNodes = schemeDataToPublish.filter(node =>
+                node.metadata.replicaOf === child.id &&
+                node.metadata.type === "object" &&
+                node.parent === child.id  // Ensure it's a direct child of the array
+              );
               
               if (replicaNodes.length > 0) {
                 const arrayValue = replicaNodes.map(replicaNode => {
@@ -251,9 +256,22 @@ const TopicDetail = () => {
                   
                   // Get all children that belong to nested objects to skip them in main processing
                   const nestedObjectChildren = new Set<number>();
+                  
+                  // Recursively collect all descendants of nested objects
+                  const collectAllDescendants = (nodeId: number) => {
+                    const node = schemeDataToPublish.find(n => n.id === nodeId);
+                    if (node && node.children) {
+                      node.children.forEach(childId => {
+                        nestedObjectChildren.add(childId);
+                        collectAllDescendants(childId); // Recursively add all descendants
+                      });
+                    }
+                  };
+                  
+                  // Find all object-type children and collect their descendants
                   replicaChildren.forEach(child => {
-                    if (child.metadata.type === "object" && child.children) {
-                      child.children.forEach(nestedChildId => nestedObjectChildren.add(nestedChildId));
+                    if (child.metadata.type === "object") {
+                      collectAllDescendants(child.id);
                     }
                   });
                   
@@ -412,7 +430,6 @@ const TopicDetail = () => {
       addAlert("Failed to publish message", "error");
       
       // Close modal for other types of errors
-      resetModalState();
       setModalProps((prevProps) => ({
         ...prevProps,
         show: false,
@@ -485,22 +502,7 @@ const TopicDetail = () => {
     return topicDetails?.schema ? JSON.parse(topicDetails?.schema) : null;
   }, [topicDetails]);
 
-  // Function to reset modal to default state
-  const resetModalState = useCallback(() => {
-    // Reset scheme data to original schema without any filled values
-    if (schemeData && name) {
-      const originalSchemaArray = convertToArrayStructure(schemeData, name);
-      setSchemeDataToPublish(originalSchemaArray);
-      schemeDataRef.current = originalSchemaArray;
-    } else {
-      setSchemeDataToPublish([]);
-      schemeDataRef.current = [];
-    }
-    
-    // Reset tab and JSON refs
-    activeTabRef.current = "tree";
-    rawJsonRef.current = "";
-  }, [schemeData, name]);
+
 
   const handleDeleteTopic = async () => {
     setIsDeleting(true);
@@ -659,7 +661,12 @@ const TopicDetail = () => {
             }
           } else if (metadata.array && ["document", "object"].includes(metadata.array)) {
             // For document/object arrays, collect values from actual replica structures in the tree
-            const replicaNodes = dataToUse.filter(node => node.metadata.replicaOf === child.id && node.metadata.type === "object");
+            // Only include nodes that are direct replicas (parent is the array itself), not nested objects
+            const replicaNodes = dataToUse.filter(node =>
+              node.metadata.replicaOf === child.id &&
+              node.metadata.type === "object" &&
+              node.parent === child.id  // Ensure it's a direct child of the array
+            );
             
             if (replicaNodes.length > 0) {
               
@@ -672,9 +679,22 @@ const TopicDetail = () => {
                 
                 // Get all children that belong to nested objects to skip them in main processing
                 const nestedObjectChildren = new Set<number>();
+                
+                // Recursively collect all descendants of nested objects
+                const collectAllDescendants = (nodeId: number) => {
+                  const node = dataToUse.find(n => n.id === nodeId);
+                  if (node && node.children) {
+                    node.children.forEach(childId => {
+                      nestedObjectChildren.add(childId);
+                      collectAllDescendants(childId); // Recursively add all descendants
+                    });
+                  }
+                };
+                
+                // Find all object-type children and collect their descendants
                 replicaChildren.forEach(child => {
-                  if (child.metadata.type === "object" && child.children) {
-                    child.children.forEach(nestedChildId => nestedObjectChildren.add(nestedChildId));
+                  if (child.metadata.type === "object") {
+                    collectAllDescendants(child.id);
                   }
                 });
                 
@@ -1251,7 +1271,12 @@ const TopicDetail = () => {
                   }
                 } else if (metadata.array && ["document", "object"].includes(metadata.array)) {
                   // For document/object arrays, collect values from actual replica structures in the tree
-                  const replicaNodes = schemeDataToPublish.filter(node => node.metadata.replicaOf === child.id && node.metadata.type === "object");
+                  // Only include nodes that are direct replicas (parent is the array itself), not nested objects
+                  const replicaNodes = schemeDataToPublish.filter(node =>
+                    node.metadata.replicaOf === child.id &&
+                    node.metadata.type === "object" &&
+                    node.parent === child.id  // Ensure it's a direct child of the array
+                  );
                   
                   if (replicaNodes.length > 0) {
                     const arrayValue = replicaNodes.map(replicaNode => {
@@ -1263,9 +1288,22 @@ const TopicDetail = () => {
                       
                       // Get all children that belong to nested objects to skip them in main processing
                       const nestedObjectChildren = new Set<number>();
+                      
+                      // Recursively collect all descendants of nested objects
+                      const collectAllDescendants = (nodeId: number) => {
+                        const node = schemeDataToPublish.find(n => n.id === nodeId);
+                        if (node && node.children) {
+                          node.children.forEach(childId => {
+                            nestedObjectChildren.add(childId);
+                            collectAllDescendants(childId); // Recursively add all descendants
+                          });
+                        }
+                      };
+                      
+                      // Find all object-type children and collect their descendants
                       replicaChildren.forEach(child => {
-                        if (child.metadata.type === "object" && child.children) {
-                          child.children.forEach(nestedChildId => nestedObjectChildren.add(nestedChildId));
+                        if (child.metadata.type === "object") {
+                          collectAllDescendants(child.id);
                         }
                       });
                       
@@ -1357,8 +1395,7 @@ const TopicDetail = () => {
         await publishTopicMessage(connection, name, messageToSend);
         addAlert("Topic message published successfully", "success");
         
-        // Reset modal state and close modal on success
-        resetModalState();
+        // Close modal on success
         setModalProps((prevProps) => ({
           ...prevProps,
           show: false,
@@ -1411,8 +1448,7 @@ const TopicDetail = () => {
         // Handle other errors
         addAlert("Failed to publish message", "error");
         
-        // Reset modal state and close modal for other types of errors
-        resetModalState();
+        // Close modal for other types of errors
         setModalProps((prevProps) => ({
           ...prevProps,
           show: false,
@@ -1641,10 +1677,9 @@ const TopicDetail = () => {
         content={modalProps.content}
         buttonColor={modalProps.buttonColor}
         confirmAction={modalProps.confirmAction}
-        cancelAction={() => {
-          resetModalState();
-          setModalProps((prevProps) => ({ ...prevProps, show: false }));
-        }}
+        cancelAction={() =>
+          setModalProps((prevProps) => ({ ...prevProps, show: false }))
+        }
         isLoading={modalProps.isLoading}
       />
     </div>
