@@ -412,14 +412,13 @@ const TopicDetail = () => {
       addAlert("Failed to publish message", "error");
       
       // Close modal for other types of errors
+      resetModalState();
       setModalProps((prevProps) => ({
         ...prevProps,
         show: false,
       }));
     }
   }, [schemeDataToPublish, name, connection, addAlert]);
-
-
 
   // const onPublish = useCallback(async () => {
   //   const collectChildValues = (parentId: number): any => {
@@ -485,6 +484,23 @@ const TopicDetail = () => {
   const schemeData = useMemo(() => {
     return topicDetails?.schema ? JSON.parse(topicDetails?.schema) : null;
   }, [topicDetails]);
+
+  // Function to reset modal to default state
+  const resetModalState = useCallback(() => {
+    // Reset scheme data to original schema without any filled values
+    if (schemeData && name) {
+      const originalSchemaArray = convertToArrayStructure(schemeData, name);
+      setSchemeDataToPublish(originalSchemaArray);
+      schemeDataRef.current = originalSchemaArray;
+    } else {
+      setSchemeDataToPublish([]);
+      schemeDataRef.current = [];
+    }
+    
+    // Reset tab and JSON refs
+    activeTabRef.current = "tree";
+    rawJsonRef.current = "";
+  }, [schemeData, name]);
 
   const handleDeleteTopic = async () => {
     setIsDeleting(true);
@@ -1341,7 +1357,8 @@ const TopicDetail = () => {
         await publishTopicMessage(connection, name, messageToSend);
         addAlert("Topic message published successfully", "success");
         
-        // Close modal on success
+        // Reset modal state and close modal on success
+        resetModalState();
         setModalProps((prevProps) => ({
           ...prevProps,
           show: false,
@@ -1394,7 +1411,8 @@ const TopicDetail = () => {
         // Handle other errors
         addAlert("Failed to publish message", "error");
         
-        // Close modal for other types of errors
+        // Reset modal state and close modal for other types of errors
+        resetModalState();
         setModalProps((prevProps) => ({
           ...prevProps,
           show: false,
@@ -1623,9 +1641,10 @@ const TopicDetail = () => {
         content={modalProps.content}
         buttonColor={modalProps.buttonColor}
         confirmAction={modalProps.confirmAction}
-        cancelAction={() =>
-          setModalProps((prevProps) => ({ ...prevProps, show: false }))
-        }
+        cancelAction={() => {
+          resetModalState();
+          setModalProps((prevProps) => ({ ...prevProps, show: false }));
+        }}
         isLoading={modalProps.isLoading}
       />
     </div>
