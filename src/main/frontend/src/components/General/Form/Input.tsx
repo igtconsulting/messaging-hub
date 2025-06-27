@@ -72,6 +72,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           }`}
         >
           {label}
+          {!optional && <span className="text-red ml-1">*</span>}
           {optional && <p className="text-gray text-sm">{`(optional)`}</p>}
           {tooltip && (
               <div className="relative group flex items-center">

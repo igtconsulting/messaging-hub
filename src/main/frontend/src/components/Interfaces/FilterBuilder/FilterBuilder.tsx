@@ -1170,8 +1170,6 @@ const FilterBuilder = forwardRef<FilterBuilderRef, FilterBuilderProps>(({
     }
 
     try {
-      console.log('Parsing filter:', filterText);
-      
       const trimmedText = filterText.trim();
       
       // Check if the entire expression is wrapped in parentheses - if so, create a group
@@ -1189,7 +1187,6 @@ const FilterBuilder = forwardRef<FilterBuilderRef, FilterBuilderProps>(({
         }
         
         if (isEntirelyWrapped) {
-          console.log('Entire expression is wrapped in parentheses - creating group');
           // Parse the content inside the parentheses
           const innerContent = trimmedText.slice(1, -1).trim();
           const innerResult = parseRawFilterWithOperators(innerContent);
@@ -1208,7 +1205,6 @@ const FilterBuilder = forwardRef<FilterBuilderRef, FilterBuilderProps>(({
               conditions: [wrappedGroup]
             };
             
-            console.log('Created wrapped group:', rootGroup);
             return { tree: rootGroup, operators: innerResult.operators };
           }
         }
@@ -1216,7 +1212,6 @@ const FilterBuilder = forwardRef<FilterBuilderRef, FilterBuilderProps>(({
       
       // Normal parsing without outer parentheses wrapping
       const parts = splitByLogicalOperators(trimmedText);
-      console.log('Split parts:', parts);
       
       if (parts.length === 0) return null;
 
@@ -1270,12 +1265,8 @@ const FilterBuilder = forwardRef<FilterBuilderRef, FilterBuilderProps>(({
         }
       }
 
-      console.log('Parsed tree:', rootGroup);
-      console.log('Parsed operators:', operators);
-      
       return { tree: rootGroup, operators };
     } catch (error) {
-      console.error('Failed to parse filter:', error);
       return null;
     }
   }, [schemaFields]);
@@ -1374,7 +1365,6 @@ const FilterBuilder = forwardRef<FilterBuilderRef, FilterBuilderProps>(({
       parts.push({type: 'condition', text: current.trim()});
     }
     
-    console.log('Split parts result:', parts);
     return parts;
   };
 
@@ -1406,8 +1396,6 @@ const FilterBuilder = forwardRef<FilterBuilderRef, FilterBuilderProps>(({
   // Parse a simple condition like "field = 'value'"
   const parseSimpleCondition = (conditionStr: string): FilterCondition | null => {
     try {
-      console.log('Parsing condition:', conditionStr);
-      
       // Remove outer parentheses if present
       let cleanStr = conditionStr.trim();
       if (cleanStr.startsWith('(') && cleanStr.endsWith(')')) {
@@ -1419,12 +1407,10 @@ const FilterBuilder = forwardRef<FilterBuilderRef, FilterBuilderProps>(({
       const match = cleanStr.match(conditionRegex);
 
       if (!match) {
-        console.warn('No match for condition:', cleanStr);
         return null;
       }
 
       const [, fieldPart, operator, valuePart] = match;
-      console.log('Matched parts:', { fieldPart, operator, valuePart });
       
       // Clean up field name (remove array indices for base field lookup)
       const baseField = fieldPart.replace(/\[\d+\].*$/, '');
@@ -1468,10 +1454,8 @@ const FilterBuilder = forwardRef<FilterBuilderRef, FilterBuilderProps>(({
         condition.fieldType = 'array';
       }
 
-      console.log('Parsed condition:', condition);
       return condition;
     } catch (error) {
-      console.error('Failed to parse condition:', conditionStr, error);
       return null;
     }
   };

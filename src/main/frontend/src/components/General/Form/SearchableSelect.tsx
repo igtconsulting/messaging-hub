@@ -172,6 +172,7 @@ const SearchableSelect = forwardRef<HTMLSelectElement, SearchableSelectProps>(
           }`}
         >
           {label}
+          {!optional && <span className="text-red ml-1">*</span>}
           {optional && <p className="text-gray text-sm">{`(optional)`}</p>}
         </label>
         

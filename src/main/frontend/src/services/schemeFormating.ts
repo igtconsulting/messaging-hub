@@ -143,6 +143,7 @@ export function convertToArrayStructure(
   // Handle case where the structure has a single root object
   let actualStructure = jsonStructure;
   let rootMetadata: any = { type: "object", additionalProperties: "yes" };
+  let rootRequired: string[] = [];
   
   // Check if we have a single root object like {orderTest: {...}}
   // This should NOT match normal schema format {type: 'object', properties: {...}}
@@ -156,13 +157,16 @@ export function convertToArrayStructure(
       type: "object",
       additionalProperties: rootObject.additionalProperties ? "yes" : "no",
     };
+    rootRequired = (rootObject.required as unknown as string[]) || [];
   } else if (isNormalSchema) {
     // Normal schema format - use the properties directly
-    actualStructure = jsonStructure.properties as unknown as Record<string, JSONTreeNode>;
+    const schemaObj = jsonStructure as unknown as { properties: Record<string, JSONTreeNode>, additionalProperties?: boolean, required?: string[] };
+    actualStructure = schemaObj.properties;
     rootMetadata = {
       type: "object",
-      additionalProperties: jsonStructure.additionalProperties ? "yes" : "no",
+      additionalProperties: schemaObj.additionalProperties ? "yes" : "no",
     };
+    rootRequired = schemaObj.required || [];
   }
 
   arrayStructure.push({
@@ -234,7 +238,7 @@ export function convertToArrayStructure(
     return availableId;
   }
   if (actualStructure) {
-    handleChildren(actualStructure as unknown as Record<string, JSONTreeNode>, [], rootId);
+    handleChildren(actualStructure as unknown as Record<string, JSONTreeNode>, rootRequired, rootId);
   }
   return fillChildren(arrayStructure);
 }
