@@ -388,8 +388,9 @@ const FilterBuilder = forwardRef<FilterBuilderRef, FilterBuilderProps>(({
     if (value !== undefined) {
       setRawFilter(value);
       
-      // If we have a non-empty value, show it in raw mode
-      if (value && value.trim()) {
+      // Only switch to raw mode if we have a non-empty initial value AND no existing filter tree
+      // This prevents auto-switching when visual builder generates new filter strings
+      if (value && value.trim() && filterTree.conditions.length === 0) {
         setShowAdvanced(true);
       }
     }
@@ -1155,155 +1156,306 @@ const FilterBuilder = forwardRef<FilterBuilderRef, FilterBuilderProps>(({
     return { isValid: true }; // Always valid for now
   }, []);
 
-  // Parse raw filter text into visual filter tree structure
-  const parseRawFilter = useCallback((filterText: string): FilterGroup | null => {
+  // Simple and robust filter parser
+  const parseRawFilterWithOperators = useCallback((filterText: string): { tree: FilterGroup; operators: Record<string, 'AND' | 'OR'> } | null => {
     if (!filterText.trim()) {
       return {
-        id: 'root',
-        type: 'group',
-        conditions: []
+        tree: {
+          id: 'root',
+          type: 'group',
+          conditions: []
+        },
+        operators: {}
       };
     }
 
     try {
-      // Simple parser for basic filter expressions
+      console.log('Parsing filter:', filterText);
+      
+      const trimmedText = filterText.trim();
+      
+      // Check if the entire expression is wrapped in parentheses - if so, create a group
+      if (trimmedText.startsWith('(') && trimmedText.endsWith(')')) {
+        // Check if these parentheses wrap the entire expression
+        let parenCount = 0;
+        let isEntirelyWrapped = true;
+        for (let i = 0; i < trimmedText.length - 1; i++) {
+          if (trimmedText[i] === '(') parenCount++;
+          else if (trimmedText[i] === ')') parenCount--;
+          if (parenCount === 0) {
+            isEntirelyWrapped = false;
+            break;
+          }
+        }
+        
+        if (isEntirelyWrapped) {
+          console.log('Entire expression is wrapped in parentheses - creating group');
+          // Parse the content inside the parentheses
+          const innerContent = trimmedText.slice(1, -1).trim();
+          const innerResult = parseRawFilterWithOperators(innerContent);
+          
+          if (innerResult && innerResult.tree.conditions.length > 0) {
+            // Create a single group containing the parsed inner content
+            const wrappedGroup: FilterGroup = {
+              id: `group_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              type: 'group',
+              conditions: innerResult.tree.conditions
+            };
+            
+            const rootGroup: FilterGroup = {
+              id: 'root',
+              type: 'group',
+              conditions: [wrappedGroup]
+            };
+            
+            console.log('Created wrapped group:', rootGroup);
+            return { tree: rootGroup, operators: innerResult.operators };
+          }
+        }
+      }
+      
+      // Normal parsing without outer parentheses wrapping
+      const parts = splitByLogicalOperators(trimmedText);
+      console.log('Split parts:', parts);
+      
+      if (parts.length === 0) return null;
+
       const rootGroup: FilterGroup = {
         id: 'root',
         type: 'group',
         conditions: []
       };
+      const operators: Record<string, 'AND' | 'OR'> = {};
 
-      // Split by main logical operators (and/or) while preserving parentheses
-      const tokens = tokenizeFilter(filterText);
-      let currentGroup = rootGroup;
-      let pendingCondition: FilterCondition | null = null;
-      let pendingOperator: 'AND' | 'OR' | null = null;
-
-      for (let i = 0; i < tokens.length; i++) {
-        const token = tokens[i].trim();
+      for (let i = 0; i < parts.length; i++) {
+        const part = parts[i];
         
-        if (token.toLowerCase() === 'and' || token.toLowerCase() === 'or') {
-          pendingOperator = token.toUpperCase() as 'AND' | 'OR';
-        } else if (token.startsWith('(') && token.endsWith(')')) {
-          // Handle grouped expressions
-          const innerExpression = token.slice(1, -1);
-          const innerGroup = parseRawFilter(innerExpression);
-          if (innerGroup && innerGroup.conditions.length > 0) {
+        if (part.type === 'condition') {
+          const condition = parseSimpleCondition(part.text);
+          if (condition) {
+            rootGroup.conditions.push(condition);
+            
+            // Set operator for previous condition/group
+            if (i > 0 && rootGroup.conditions.length > 1) {
+              const prevElement = rootGroup.conditions[rootGroup.conditions.length - 2];
+              const prevPart = parts[i - 1];
+              if (prevPart && prevPart.type === 'operator') {
+                operators[prevElement.id] = prevPart.text as 'AND' | 'OR';
+              }
+            }
+          }
+        } else if (part.type === 'group') {
+          // Recursively parse the group content
+          const groupResult = parseRawFilterWithOperators(part.text);
+          if (groupResult && groupResult.tree.conditions.length > 0) {
             const newGroup: FilterGroup = {
               id: `group_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
               type: 'group',
-              conditions: innerGroup.conditions
+              conditions: groupResult.tree.conditions
             };
-            currentGroup.conditions.push(newGroup);
-            if (pendingOperator && currentGroup.conditions.length > 1) {
-              const prevCondition = currentGroup.conditions[currentGroup.conditions.length - 2];
-              setConditionOperators(prev => ({
-                ...prev,
-                [prevCondition.id]: pendingOperator!
-              }));
-            }
-          }
-        } else {
-          // Parse individual condition
-          const condition = parseCondition(token);
-          if (condition) {
-            currentGroup.conditions.push(condition);
-            if (pendingOperator && currentGroup.conditions.length > 1) {
-              const prevCondition = currentGroup.conditions[currentGroup.conditions.length - 2];
-              setConditionOperators(prev => ({
-                ...prev,
-                [prevCondition.id]: pendingOperator!
-              }));
+            rootGroup.conditions.push(newGroup);
+            
+            // Merge operators from the nested group
+            Object.assign(operators, groupResult.operators);
+            
+            // Set operator for previous condition/group
+            if (i > 0 && rootGroup.conditions.length > 1) {
+              const prevElement = rootGroup.conditions[rootGroup.conditions.length - 2];
+              const prevPart = parts[i - 1];
+              if (prevPart && prevPart.type === 'operator') {
+                operators[prevElement.id] = prevPart.text as 'AND' | 'OR';
+              }
             }
           }
         }
-        pendingOperator = null;
       }
 
-      return rootGroup;
+      console.log('Parsed tree:', rootGroup);
+      console.log('Parsed operators:', operators);
+      
+      return { tree: rootGroup, operators };
     } catch (error) {
-      console.warn('Failed to parse filter:', error);
+      console.error('Failed to parse filter:', error);
       return null;
     }
-  }, []);
+  }, [schemaFields]);
 
-  // Tokenize filter string while respecting parentheses and quotes
-  const tokenizeFilter = (filterText: string): string[] => {
-    const tokens: string[] = [];
+  // Keep the old parseRawFilter for backward compatibility
+  const parseRawFilter = useCallback((filterText: string): FilterGroup | null => {
+    const result = parseRawFilterWithOperators(filterText);
+    return result?.tree || null;
+  }, [parseRawFilterWithOperators]);
+
+  // Split filter text by logical operators while respecting parentheses and quotes
+  const splitByLogicalOperators = (text: string): Array<{type: 'condition' | 'operator' | 'group', text: string}> => {
+    let cleanText = text.trim();
+    
+    // Remove outer parentheses ONLY if they wrap the entire expression and it's not a group we want to preserve
+    if (cleanText.startsWith('(') && cleanText.endsWith(')')) {
+      // Check if these are actually outer parentheses wrapping the whole thing
+      let parenCount = 0;
+      let canRemove = true;
+      for (let i = 0; i < cleanText.length - 1; i++) {
+        if (cleanText[i] === '(') parenCount++;
+        else if (cleanText[i] === ')') parenCount--;
+        if (parenCount === 0) {
+          canRemove = false;
+          break;
+        }
+      }
+      if (canRemove) {
+        cleanText = cleanText.slice(1, -1).trim();
+        console.log('Removed outer parentheses, now:', cleanText);
+      }
+    }
+    
+    const parts: Array<{type: 'condition' | 'operator' | 'group', text: string}> = [];
     let current = '';
-    let parenDepth = 0;
     let inQuote = false;
-    let i = 0;
-
-    while (i < filterText.length) {
-      const char = filterText[i];
-      const nextChars = filterText.slice(i, i + 4).toLowerCase();
-
-      if (char === "'" && (i === 0 || filterText[i - 1] !== '\\')) {
+    let parenDepth = 0;
+    
+    for (let i = 0; i < cleanText.length; i++) {
+      const char = cleanText[i];
+      
+      if (char === "'" && (i === 0 || cleanText[i - 1] !== '\\')) {
         inQuote = !inQuote;
         current += char;
       } else if (!inQuote) {
         if (char === '(') {
+          if (parenDepth === 0 && current.trim() === '') {
+            // Starting a new group at top level
+            const groupEnd = findMatchingParen(cleanText, i);
+            if (groupEnd !== -1) {
+              const groupContent = cleanText.slice(i + 1, groupEnd);
+              parts.push({type: 'group', text: groupContent});
+              i = groupEnd; // Skip to after the closing paren
+              continue;
+            }
+          }
           parenDepth++;
           current += char;
         } else if (char === ')') {
           parenDepth--;
           current += char;
-        } else if (parenDepth === 0 && (nextChars.startsWith('and ') || nextChars.startsWith('or '))) {
-          // Found logical operator at root level
-          if (current.trim()) {
-            tokens.push(current.trim());
-            current = '';
+        } else if (parenDepth === 0) {
+          // Check for 'and' or 'or' at top level with proper word boundaries
+          const remaining = cleanText.slice(i);
+          const andMatch = remaining.match(/^(\s+and\s+)/i);
+          const orMatch = remaining.match(/^(\s+or\s+)/i);
+          
+          if (andMatch) {
+            if (current.trim()) {
+              parts.push({type: 'condition', text: current.trim()});
+              current = '';
+            }
+            parts.push({type: 'operator', text: 'AND'});
+            i += andMatch[1].length - 1; // Skip 'and' and spaces
+            continue;
+          } else if (orMatch) {
+            if (current.trim()) {
+              parts.push({type: 'condition', text: current.trim()});
+              current = '';
+            }
+            parts.push({type: 'operator', text: 'OR'});
+            i += orMatch[1].length - 1; // Skip 'or' and spaces
+            continue;
+          } else {
+            current += char;
           }
-          tokens.push(nextChars.startsWith('and ') ? 'and' : 'or');
-          i += nextChars.startsWith('and ') ? 3 : 2; // Skip the operator
         } else {
           current += char;
         }
       } else {
         current += char;
       }
-      i++;
     }
-
+    
     if (current.trim()) {
-      tokens.push(current.trim());
+      parts.push({type: 'condition', text: current.trim()});
     }
-
-    return tokens;
+    
+    console.log('Split parts result:', parts);
+    return parts;
   };
 
-  // Parse individual condition from string like "field = 'value'"
-  const parseCondition = (conditionStr: string): FilterCondition | null => {
-    try {
-      // Match pattern: field operator value
-      const conditionRegex = /^(\w+(?:\.\w+)*(?:\[\d+\])?)\s*([=!<>]+)\s*(.+)$/;
-      const match = conditionStr.match(conditionRegex);
+  // Helper function to find matching closing parenthesis
+  const findMatchingParen = (text: string, openIndex: number): number => {
+    let parenCount = 1;
+    let inQuote = false;
+    
+    for (let i = openIndex + 1; i < text.length; i++) {
+      const char = text[i];
+      
+      if (char === "'" && (i === 0 || text[i - 1] !== '\\')) {
+        inQuote = !inQuote;
+      } else if (!inQuote) {
+        if (char === '(') {
+          parenCount++;
+        } else if (char === ')') {
+          parenCount--;
+          if (parenCount === 0) {
+            return i;
+          }
+        }
+      }
+    }
+    
+    return -1; // No matching paren found
+  };
 
-      if (!match) return null;
+  // Parse a simple condition like "field = 'value'"
+  const parseSimpleCondition = (conditionStr: string): FilterCondition | null => {
+    try {
+      console.log('Parsing condition:', conditionStr);
+      
+      // Remove outer parentheses if present
+      let cleanStr = conditionStr.trim();
+      if (cleanStr.startsWith('(') && cleanStr.endsWith(')')) {
+        cleanStr = cleanStr.slice(1, -1).trim();
+      }
+      
+      // Enhanced regex to handle complex field paths like object.objectList[0].lol
+      const conditionRegex = /^([a-zA-Z_]\w*(?:\.[a-zA-Z_]\w*|\[\d+\])*)\s*(=|!=|<>|<=|>=|<|>)\s*(.+)$/;
+      const match = cleanStr.match(conditionRegex);
+
+      if (!match) {
+        console.warn('No match for condition:', cleanStr);
+        return null;
+      }
 
       const [, fieldPart, operator, valuePart] = match;
+      console.log('Matched parts:', { fieldPart, operator, valuePart });
       
-      // Determine field type from schema
-      const baseField = fieldPart.replace(/\[\d+\]$/, '').replace(/\.\w+$/, '');
-      const schemaField = schemaFields.find(f =>
-        f.field === baseField ||
-        f.field === fieldPart ||
-        fieldPart.startsWith(f.field + '.')
-      );
+      // Clean up field name (remove array indices for base field lookup)
+      const baseField = fieldPart.replace(/\[\d+\].*$/, '');
       
-      const fieldType = schemaField?.type || 'string';
+      // Try to find field type from schema
+      const schemaField = schemaFields.find(f => f.field === baseField || f.field === fieldPart);
+      let fieldType: FilterCondition['fieldType'] = 'string';
       
-      // Clean up value (remove quotes for strings)
+      if (schemaField) {
+        fieldType = schemaField.type as FilterCondition['fieldType'];
+      } else {
+        // Infer type from value
+        const trimmedValue = valuePart.trim();
+        if (trimmedValue === 'true' || trimmedValue === 'false') {
+          fieldType = 'boolean';
+        } else if (!isNaN(Number(trimmedValue.replace(/['"]/g, '')))) {
+          fieldType = 'integer';
+        }
+      }
+      
+      // Clean up value (remove quotes)
       let cleanValue = valuePart.trim();
-      if (cleanValue.startsWith("'") && cleanValue.endsWith("'")) {
+      if ((cleanValue.startsWith("'") && cleanValue.endsWith("'")) ||
+          (cleanValue.startsWith('"') && cleanValue.endsWith('"'))) {
         cleanValue = cleanValue.slice(1, -1);
       }
 
       const condition: FilterCondition = {
         id: `cond_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        field: fieldPart.includes('[') ? fieldPart.split('[')[0] : fieldPart,
-        fieldType: fieldType as FilterCondition['fieldType'],
+        field: baseField,
+        fieldType: fieldType,
         operator: operator,
         value: cleanValue,
         valueType: 'literal'
@@ -1316,9 +1468,10 @@ const FilterBuilder = forwardRef<FilterBuilderRef, FilterBuilderProps>(({
         condition.fieldType = 'array';
       }
 
+      console.log('Parsed condition:', condition);
       return condition;
     } catch (error) {
-      console.warn('Failed to parse condition:', conditionStr, error);
+      console.error('Failed to parse condition:', conditionStr, error);
       return null;
     }
   };
@@ -1618,9 +1771,10 @@ const FilterBuilder = forwardRef<FilterBuilderRef, FilterBuilderProps>(({
             onClick={() => {
               if (showAdvanced && rawFilter.trim()) {
                 // Parse raw filter and convert to visual mode
-                const parsedTree = parseRawFilter(rawFilter);
-                if (parsedTree) {
-                  setFilterTree(parsedTree);
+                const parseResult = parseRawFilterWithOperators(rawFilter);
+                if (parseResult) {
+                  setFilterTree(parseResult.tree);
+                  setConditionOperators(parseResult.operators);
                 }
               }
               setShowAdvanced(false);
@@ -1639,6 +1793,19 @@ const FilterBuilder = forwardRef<FilterBuilderRef, FilterBuilderProps>(({
         {showAdvanced ? (
           // Raw text mode
           <div>
+            {/* Red warning note for raw filter */}
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-start gap-2">
+                <div className="text-red-600 font-bold text-lg">⚠️</div>
+                <div>
+                  <div className="text-sm font-semibold text-red-800 mb-1">Important Notice</div>
+                  <div className="text-sm text-red-700">
+                    When using raw filter mode, it is your responsibility to ensure the filter expression is written properly and follows the correct syntax. Invalid expressions may cause processing errors.
+                  </div>
+                </div>
+              </div>
+            </div>
+            
             <textarea
               name={name}
               value={rawFilter}
@@ -1709,8 +1876,8 @@ const FilterBuilder = forwardRef<FilterBuilderRef, FilterBuilderProps>(({
           </div>
         )}
 
-        {/* Generated filter preview */}
-        {rawFilter && (
+        {/* Generated filter preview - only show in visual builder mode */}
+        {!showAdvanced && rawFilter && (
           <div className="p-4 bg-gray-100 rounded-lg border border-gray-200">
             <div className="text-sm font-semibold text-gray-700 mb-2">Generated Filter:</div>
             <code className="text-sm text-gray-800 break-all">{rawFilter}</code>
@@ -2122,7 +2289,7 @@ const FilterBuilder = forwardRef<FilterBuilderRef, FilterBuilderProps>(({
       );
     };
 
-    const rootNodes = treeData.filter(node => node.parent === 0 || node.parent === 1);
+    const rootNodes = treeData.filter(node => node.parent === 0);
     
     return (
       <div className="px-6 py-3">
