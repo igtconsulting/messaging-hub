@@ -5,7 +5,7 @@
 
   <!-- nodes -->
 
-<INVOKE TIMEOUT="" SERVICE="GLOBAL_Tec.utils.flow:saveRestorePipelineMem" VALIDATE-IN="$none" VALIDATE-OUT="$none">
+<INVOKE TIMEOUT="" SERVICE="MessagingHub.v1.services.utils:saveRestorePipelineMem" VALIDATE-IN="$none" VALIDATE-OUT="$none">
   <COMMENT></COMMENT>
 
   <!-- nodes -->
@@ -1921,7 +1921,7 @@
                 <value name="node_type">unknown</value>
                 <value name="node_subtype">unknown</value>
                 <value name="is_public">false</value>
-                <value name="field_name">MESSAGING_HUB_FORWARDING</value>
+                <value name="field_name">TRIGGER_EXECUTION_USER</value>
                 <value name="field_type">string</value>
                 <value name="field_dim">0</value>
                 <value name="nillable">true</value>
@@ -1932,7 +1932,7 @@
                 <value name="node_type">unknown</value>
                 <value name="node_subtype">unknown</value>
                 <value name="is_public">false</value>
-                <value name="field_name">TRIGGER_EXECUTION_USER</value>
+                <value name="field_name">MESSAGING_HUB_FORWARDING</value>
                 <value name="field_type">string</value>
                 <value name="field_dim">0</value>
                 <value name="nillable">true</value>
@@ -2888,7 +2888,7 @@
                 <value name="node_type">unknown</value>
                 <value name="node_subtype">unknown</value>
                 <value name="is_public">false</value>
-                <value name="field_name">MESSAGING_HUB_FORWARDING</value>
+                <value name="field_name">TRIGGER_EXECUTION_USER</value>
                 <value name="field_type">string</value>
                 <value name="field_dim">0</value>
                 <value name="nillable">true</value>
@@ -2899,7 +2899,7 @@
                 <value name="node_type">unknown</value>
                 <value name="node_subtype">unknown</value>
                 <value name="is_public">false</value>
-                <value name="field_name">TRIGGER_EXECUTION_USER</value>
+                <value name="field_name">MESSAGING_HUB_FORWARDING</value>
                 <value name="field_type">string</value>
                 <value name="field_dim">0</value>
                 <value name="nillable">true</value>
@@ -4948,7 +4948,7 @@
 </MAPDELETE>
 </MAP>
 
-<EXIT FROM="$flow" SIGNAL="SUCCESS" FAILURE-MESSAGE="">
+<EXIT FROM="$flow" SIGNAL="FAILURE" FAILURE-MESSAGE="%lastError/localizedError%">
   <COMMENT></COMMENT>
 </EXIT>
 </SEQUENCE>

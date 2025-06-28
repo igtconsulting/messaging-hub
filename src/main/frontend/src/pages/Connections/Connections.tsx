@@ -193,6 +193,7 @@ const ConnectionsView = () => {
               onVisibleRowsChange={handleVisibleRowsChange}
               redirectTo="connections"
               onActionClick={handleActionClick}
+              disabledActions={["Edit"]}
             />
           )}
         </div>

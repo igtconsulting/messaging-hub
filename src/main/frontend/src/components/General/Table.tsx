@@ -17,6 +17,7 @@ type TableProps = {
   redirectTo: string;
   onActionClick: (action: string, row: TableRow) => void;
   connection?: string;
+  disabledActions?: string[];
 };
 
 const Table: React.FC<TableProps> = ({
@@ -30,6 +31,7 @@ const Table: React.FC<TableProps> = ({
   redirectTo,
   onActionClick,
   connection,
+  disabledActions = [],
 }) => {
   const [selectedConnType, setSelectedConnType] = useState<string>("All");
   const [searchTerm, setSearchTerm] = useState<string>("");
@@ -170,6 +172,7 @@ const Table: React.FC<TableProps> = ({
                     <td className="flex items-center space-x-2 py-2 px-4">
                       {row.actions.map(
                         (action: string, actionIndex: number) => {
+                          const isDisabled = disabledActions.includes(action);
                           return (
                             <Button
                               color={actionButtonColors[actionIndex]}
@@ -180,7 +183,8 @@ const Table: React.FC<TableProps> = ({
                                 actionButtonIcons &&
                                 actionButtonIcons[actionIndex]
                               }
-                              onClick={() => onActionClick(action, row)}
+                              disabled={isDisabled}
+                              onClick={() => !isDisabled && onActionClick(action, row)}
                             />
                           );
                         }

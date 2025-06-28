@@ -155,6 +155,7 @@ const ConnectionForm: React.FC<NewConnectionFormProps> = ({
         tooltip="Name of the connection in MessagingHub"
         ref={connectionNameRef}
         error={error}
+        disabled={connection ? true : false}
         defaultValue={connection ? connection.connection_name : ""}
       />
       {isResourceNameOptions.length === 0 ? (
@@ -167,7 +168,7 @@ const ConnectionForm: React.FC<NewConnectionFormProps> = ({
               ref={isResourceNameRef}
               name="isResourceName"
               label="IS resource name"
-              disabled={!selectedConnectionType}
+              disabled={connection ? true : !selectedConnectionType}
               value={connection?.is_resource_name || ""}
               error={error}
               placeholder="Search IS resources..."
@@ -181,6 +182,7 @@ const ConnectionForm: React.FC<NewConnectionFormProps> = ({
         ref={prometheusUrlRef}
         error={error}
         optional
+        disabled={connection ? true : false}
         defaultValue={connection ? connection.prometheus_url : ""}
       />
       <Input

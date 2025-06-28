@@ -40,12 +40,15 @@ const Button: React.FC<ButtonProps> = ({
 }) => {
   return (
     <button
-      className={`${
-        colors[color]
-      } text-base uppercase font-medium font-roboto rounded-md transition-all duration-150 flex justify-center items-center ${className} 
-      ${disabled ? "opacity-50" : ""}
+      className={`text-base uppercase font-medium font-roboto rounded-md transition-all duration-150 flex justify-center items-center ${className}
+      ${disabled ? "bg-gray-300 border-gray-300 text-gray-500 cursor-not-allowed border" : colors[color]}
       ${padding && (tableButton ? "px-3 py-1.5" : "min-w-[8.5rem] px-5  py-2")}
       `}
+      style={disabled ? {
+        backgroundColor: '#d1d5db !important',
+        borderColor: '#d1d5db !important',
+        color: '#6b7280 !important'
+      } : {}}
       onClick={onClick}
       type={type}
       disabled={disabled}

@@ -187,7 +187,7 @@ const ConnectionDetail = () => {
         <Button
           color="blue"
           text="Edit"
-          disabled={loadingConnection}
+          disabled={true}
           onClick={() => navigate(`/connections/${name}/edit`)}
         />
         <Button

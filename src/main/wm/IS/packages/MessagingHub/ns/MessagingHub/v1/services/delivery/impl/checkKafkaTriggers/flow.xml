@@ -1921,7 +1921,7 @@
                 <value name="node_type">unknown</value>
                 <value name="node_subtype">unknown</value>
                 <value name="is_public">false</value>
-                <value name="field_name">MESSAGING_HUB_FORWARDING</value>
+                <value name="field_name">TRIGGER_EXECUTION_USER</value>
                 <value name="field_type">string</value>
                 <value name="field_dim">0</value>
                 <value name="nillable">true</value>
@@ -1932,7 +1932,7 @@
                 <value name="node_type">unknown</value>
                 <value name="node_subtype">unknown</value>
                 <value name="is_public">false</value>
-                <value name="field_name">TRIGGER_EXECUTION_USER</value>
+                <value name="field_name">MESSAGING_HUB_FORWARDING</value>
                 <value name="field_type">string</value>
                 <value name="field_dim">0</value>
                 <value name="nillable">true</value>
@@ -2888,7 +2888,7 @@
                 <value name="node_type">unknown</value>
                 <value name="node_subtype">unknown</value>
                 <value name="is_public">false</value>
-                <value name="field_name">MESSAGING_HUB_FORWARDING</value>
+                <value name="field_name">TRIGGER_EXECUTION_USER</value>
                 <value name="field_type">string</value>
                 <value name="field_dim">0</value>
                 <value name="nillable">true</value>
@@ -2899,7 +2899,7 @@
                 <value name="node_type">unknown</value>
                 <value name="node_subtype">unknown</value>
                 <value name="is_public">false</value>
-                <value name="field_name">TRIGGER_EXECUTION_USER</value>
+                <value name="field_name">MESSAGING_HUB_FORWARDING</value>
                 <value name="field_type">string</value>
                 <value name="field_dim">0</value>
                 <value name="nillable">true</value>
@@ -4941,14 +4941,11 @@
 
   <!-- nodes -->
 
-<MAPDELETE FIELD="/lastError;4;0;pub.event:exceptionInfo">
-</MAPDELETE>
-
 <MAPDELETE FIELD="/responseCode;1;0">
 </MAPDELETE>
 </MAP>
 
-<EXIT FROM="$flow" SIGNAL="SUCCESS" FAILURE-MESSAGE="">
+<EXIT FROM="$flow" SIGNAL="FAILURE" FAILURE-MESSAGE="%lastError/localizedError%">
   <COMMENT></COMMENT>
 </EXIT>
 </SEQUENCE>

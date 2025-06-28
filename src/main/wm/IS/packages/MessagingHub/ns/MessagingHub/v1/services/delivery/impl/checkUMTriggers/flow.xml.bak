@@ -2548,7 +2548,7 @@
 
   <!-- nodes -->
 
-<MAPINVOKE SERVICE="GLOBAL_Tec.utils.regex:matches" VALIDATE-IN="$none" VALIDATE-OUT="$none" INVOKE-ORDER="0">
+<MAPINVOKE SERVICE="MessagingHub.v1.services.utils:matches" VALIDATE-IN="$none" VALIDATE-OUT="$none" INVOKE-ORDER="0">
 
   <!-- nodes -->
 
@@ -8295,7 +8295,7 @@
 </MAPDELETE>
 </MAP>
 
-<EXIT FROM="$flow" SIGNAL="SUCCESS" FAILURE-MESSAGE="">
+<EXIT FROM="$flow" SIGNAL="FAILURE" FAILURE-MESSAGE="%lastError/localizedError%">
   <COMMENT></COMMENT>
 </EXIT>
 </SEQUENCE>

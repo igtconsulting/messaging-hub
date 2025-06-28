@@ -165,16 +165,18 @@ const SearchableSelect = forwardRef<HTMLSelectElement, SearchableSelectProps>(
 
     return (
       <div className={`flex flex-col mb-6 ${wrapperClassName}`}>
-        <label
-          htmlFor={name}
-          className={`font-roboto flex gap-2 items-center ${labelClassName} ${
-            errorMessage ? "!text-red" : ""
-          }`}
-        >
-          {label}
-          {!optional && <span className="text-red ml-1">*</span>}
-          {optional && <p className="text-gray text-sm">{`(optional)`}</p>}
-        </label>
+        {label && (
+          <label
+            htmlFor={name}
+            className={`font-roboto flex gap-2 items-center ${labelClassName} ${
+              errorMessage ? "!text-red" : ""
+            }`}
+          >
+            {label}
+            {!optional && <span className="text-red">*</span>}
+            {optional && <p className="text-gray text-sm">{`(optional)`}</p>}
+          </label>
+        )}
         
         <div ref={containerRef} className="relative w-full">
           <div className="absolute w-3 h-2 border-t-4 border-white top-[-2px] left-3"></div>
@@ -200,24 +202,36 @@ const SearchableSelect = forwardRef<HTMLSelectElement, SearchableSelectProps>(
 
           {/* Custom dropdown interface */}
           <div
-            className={`w-full max-w-[330px] font-roboto border border-gray ring-2 ring-transparent rounded px-4 py-3 focus-within:outline-none focus-within:ring-blue ${className} ${
-              errorMessage ? "!border-red !ring-red ring-1" : ""
-            } ${
-              disabled ? "cursor-not-allowed bg-gray-100" : "cursor-pointer"
-            }`}
+            className={disabled ?
+              "w-full max-w-[330px] font-roboto border rounded px-4 py-3 cursor-not-allowed" :
+              `w-full max-w-[330px] font-roboto border border-gray ring-2 ring-transparent rounded px-4 py-3 focus-within:outline-none focus-within:ring-blue cursor-pointer ${className} ${
+                errorMessage ? "!border-red !ring-red ring-1" : ""
+              }`
+            }
+            style={{
+              backgroundColor: disabled ? '#f3f4f6' : 'white',
+              borderColor: disabled ? '#d1d5db' : (errorMessage ? '#ef4444' : '#d1d5db'),
+              color: disabled ? '#6b7280' : 'inherit',
+              ...(disabled && { pointerEvents: 'none' })
+            }}
             onClick={() => !disabled && setIsOpen(!isOpen)}
             onKeyDown={handleKeyDown}
             tabIndex={disabled ? -1 : 0}
           >
             <div className="flex items-center justify-between">
-              <span className={`truncate pr-2 ${selectedOption ? "text-black" : "text-gray"}`}>
+              <span
+                className={`truncate pr-2`}
+                style={disabled ? {
+                  color: '#6b7280'
+                } : selectedOption ? { color: 'black' } : { color: '#9ca3af' }}
+              >
                 {selectedOption ? selectedOption.label : "Select an option"}
               </span>
               <div className="ml-2 flex-shrink-0">
                 {isOpen ? (
-                  <ArrowUp className="w-4 h-4 text-gray-600" />
+                  <ArrowUp className={`w-4 h-4 ${disabled ? "text-gray-400" : "text-gray-600"}`} />
                 ) : (
-                  <ArrowDown className="w-4 h-4 text-gray-600" />
+                  <ArrowDown className={`w-4 h-4 ${disabled ? "text-gray-400" : "text-gray-600"}`} />
                 )}
               </div>
             </div>

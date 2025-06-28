@@ -107,7 +107,7 @@ public final class impl
 		    + "environment VARCHAR(128) NOT NULL, "
 		    + "enabled BOOLEAN NOT NULL, "
 		    + "source_topic VARCHAR(128) NOT NULL, "
-		    + "message_filter VARCHAR(128), "
+		    + "message_filter VARCHAR(512), "
 		    + "delivery_method VARCHAR(128) NOT NULL, "
 		    + "custom_service_name VARCHAR(128), "
 		    + "delivery_endpoint VARCHAR(128), "

@@ -313,7 +313,7 @@
   <!-- nodes -->
 
 <MAP TIMEOUT="" MODE="STANDALONE">
-  <COMMENT></COMMENT>
+  <COMMENT>convert id to number</COMMENT>
   <MAPTARGET>
 
 <Values version="2.0">
@@ -2557,7 +2557,7 @@
   <!-- nodes -->
 
 <MAP TIMEOUT="" MODE="STANDALONE">
-  <COMMENT></COMMENT>
+  <COMMENT>concat global_prefix + .topics:</COMMENT>
   <MAPTARGET>
 
 <Values version="2.0">
@@ -2892,7 +2892,7 @@
 </MAP>
 
 <MAP TIMEOUT="" MODE="STANDALONE">
-  <COMMENT></COMMENT>
+  <COMMENT>add topic name</COMMENT>
   <MAPTARGET>
 
 <Values version="2.0">
@@ -8863,14 +8863,11 @@
 
   <!-- nodes -->
 
-<MAPDELETE FIELD="/lastError;4;0;pub.event:exceptionInfo">
-</MAPDELETE>
-
 <MAPDELETE FIELD="/responseCode;1;0">
 </MAPDELETE>
 </MAP>
 
-<EXIT FROM="$flow" SIGNAL="SUCCESS" FAILURE-MESSAGE="">
+<EXIT FROM="$flow" SIGNAL="FAILURE" FAILURE-MESSAGE="%lastError/localizedError%">
   <COMMENT></COMMENT>
 </EXIT>
 </SEQUENCE>

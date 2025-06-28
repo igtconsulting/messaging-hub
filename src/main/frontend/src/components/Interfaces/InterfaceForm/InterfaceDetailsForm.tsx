@@ -427,7 +427,7 @@ const InterfaceDetailsForm: React.FC<InterfaceFormProps> = ({
         value={selectedConnectionType}
         onChange={(e) => setSelectedConnectionType(e.target.value)}
         label="Connection Type"
-        //disabled={interfaceDetails ? true : false}
+        disabled={interfaceDetails ? true : false}
       />
       {selectedConnectionType === "KAFKA" && (
         <Select
@@ -484,8 +484,9 @@ const InterfaceDetailsForm: React.FC<InterfaceFormProps> = ({
         placeholder="Search packages..."
       />
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-        <label htmlFor="triggerUser">
+        <label htmlFor="triggerUser" className="font-roboto flex gap-2 items-center">
           Trigger execution user
+          <span className="text-red">*</span>
         </label>
 
         <div className="relative group inline-block" style={{ verticalAlign: 'middle', cursor: 'pointer' }} aria-label="Info">
@@ -524,6 +525,7 @@ const InterfaceDetailsForm: React.FC<InterfaceFormProps> = ({
               onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setTriggerUser(e.target.value)}
               error={error}
               label=""
+              optional={true}
               placeholder="Search users..."
           />
 

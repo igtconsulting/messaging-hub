@@ -71,6 +71,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
           }`}
         >
           {label}
+          {!optional && <span className="text-red">*</span>}
           {optional && <p className="text-gray text-sm">{`(optional)`}</p>}
         </label>
         <div className="relative w-full">
@@ -79,11 +80,18 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
             id={id}
             ref={ref}
             onChange={handleChange}
-            className={`w-full max-w-[330px] font-roboto border border-gray ring-2 ring-transparent rounded px-4 py-3 focus:outline-none focus:ring-blue text-ellipsis overflow-hidden ${className} ${
-              errorMessage ? "!border-red !ring-red ring-1" : ""
+            className={disabled ?
+              "w-full max-w-[330px] font-roboto border rounded px-4 py-3 cursor-not-allowed text-ellipsis overflow-hidden" :
+              `w-full max-w-[330px] font-roboto border border-gray ring-2 ring-transparent rounded px-4 py-3 focus:outline-none focus:ring-blue text-ellipsis overflow-hidden cursor-pointer ${className} ${
+                errorMessage ? "!border-red !ring-red ring-1" : ""
+              }`
             }
-            ${disabled ? "cursor-not-allowed" : "cursor-pointer"}
-            `}
+            style={{
+              backgroundColor: disabled ? '#f3f4f6' : 'white',
+              borderColor: disabled ? '#d1d5db' : (errorMessage ? '#ef4444' : '#d1d5db'),
+              color: disabled ? '#6b7280' : 'inherit',
+              ...(disabled && { pointerEvents: 'none' })
+            }}
             value={value}
             disabled={disabled}
             {...rest}

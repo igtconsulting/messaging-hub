@@ -72,7 +72,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           }`}
         >
           {label}
-          {!optional && <span className="text-red ml-1">*</span>}
+          {!optional && <span className="text-red">*</span>}
           {optional && <p className="text-gray text-sm">{`(optional)`}</p>}
           {tooltip && (
               <div className="relative group flex items-center">
@@ -104,6 +104,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
               errorMessage ? "!border-red !ring-red ring-1" : ""
             }
             ${schemeSize ? "px-2 py-1 ring-1 hover:border-blue" : "px-4 py-3 ring-2"}
+            ${rest.disabled ? "bg-gray-100 text-gray-500 border-gray-300 cursor-not-allowed" : ""}
             `}
             {...rest}
           />
