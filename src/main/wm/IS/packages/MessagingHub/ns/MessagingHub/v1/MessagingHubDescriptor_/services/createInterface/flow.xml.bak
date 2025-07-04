@@ -83,20 +83,12 @@
     <value name="is_global">false</value>
     <array name="rec_fields" type="record" depth="1">
       <record javaclass="com.wm.util.Values">
-        <value name="node_type">record</value>
+        <value name="node_type">unknown</value>
         <value name="node_subtype">unknown</value>
-        <value name="node_comment"></value>
-        <record name="node_hints" javaclass="com.wm.util.Values">
-          <value name="field_usereditable">true</value>
-          <value name="field_largerEditor">false</value>
-          <value name="field_password">false</value>
-        </record>
         <value name="is_public">false</value>
         <value name="field_name">debug</value>
         <value name="field_type">string</value>
         <value name="field_dim">0</value>
-        <array name="field_options" type="value" depth="1">
-        </array>
         <value name="nillable">true</value>
         <value name="form_qualified">false</value>
         <value name="is_global">false</value>
@@ -104,17 +96,11 @@
       <record javaclass="com.wm.util.Values">
         <value name="node_type">record</value>
         <value name="node_subtype">unknown</value>
-        <value name="node_comment"></value>
-        <record name="node_hints" javaclass="com.wm.util.Values">
-          <value name="field_largerEditor">false</value>
-          <value name="field_password">false</value>
-        </record>
         <value name="is_public">false</value>
         <value name="field_name">requestBody</value>
         <value name="field_type">record</value>
         <value name="field_is_jsonSchema">true</value>
         <value name="field_dim">0</value>
-        <value name="wrapper_type">IData</value>
         <array name="rec_fields" type="record" depth="1">
         </array>
         <value name="modifiable">true</value>
@@ -146,20 +132,12 @@
     <value name="is_global">false</value>
     <array name="rec_fields" type="record" depth="1">
       <record javaclass="com.wm.util.Values">
-        <value name="node_type">record</value>
+        <value name="node_type">unknown</value>
         <value name="node_subtype">unknown</value>
-        <value name="node_comment"></value>
-        <record name="node_hints" javaclass="com.wm.util.Values">
-          <value name="field_usereditable">true</value>
-          <value name="field_largerEditor">false</value>
-          <value name="field_password">false</value>
-        </record>
         <value name="is_public">false</value>
         <value name="field_name">debug</value>
         <value name="field_type">string</value>
         <value name="field_dim">0</value>
-        <array name="field_options" type="value" depth="1">
-        </array>
         <value name="nillable">true</value>
         <value name="form_qualified">false</value>
         <value name="is_global">false</value>
@@ -167,17 +145,11 @@
       <record javaclass="com.wm.util.Values">
         <value name="node_type">record</value>
         <value name="node_subtype">unknown</value>
-        <value name="node_comment"></value>
-        <record name="node_hints" javaclass="com.wm.util.Values">
-          <value name="field_largerEditor">false</value>
-          <value name="field_password">false</value>
-        </record>
         <value name="is_public">false</value>
         <value name="field_name">requestBody</value>
         <value name="field_type">record</value>
         <value name="field_is_jsonSchema">true</value>
         <value name="field_dim">0</value>
-        <value name="wrapper_type">IData</value>
         <array name="rec_fields" type="record" depth="1">
         </array>
         <value name="modifiable">true</value>
@@ -525,17 +497,11 @@
       <record javaclass="com.wm.util.Values">
         <value name="node_type">record</value>
         <value name="node_subtype">unknown</value>
-        <value name="node_comment"></value>
-        <record name="node_hints" javaclass="com.wm.util.Values">
-          <value name="field_largerEditor">false</value>
-          <value name="field_password">false</value>
-        </record>
         <value name="is_public">false</value>
         <value name="field_name">requestBody</value>
         <value name="field_type">record</value>
         <value name="field_is_jsonSchema">true</value>
         <value name="field_dim">0</value>
-        <value name="wrapper_type">IData</value>
         <array name="rec_fields" type="record" depth="1">
           <record javaclass="com.wm.util.Values">
             <value name="node_type">record</value>
@@ -569,8 +535,6 @@
               </record>
             </array>
             <value name="nillable">true</value>
-            <Boolean name="readOnly">false</Boolean>
-            <Boolean name="writeOnly">false</Boolean>
             <value name="modifiable">true</value>
             <value name="rec_ref">MessagingHub.v1.MessagingHubDescriptor_.docTypes:interface</value>
           </record>
@@ -922,17 +886,11 @@
       <record javaclass="com.wm.util.Values">
         <value name="node_type">record</value>
         <value name="node_subtype">unknown</value>
-        <value name="node_comment"></value>
-        <record name="node_hints" javaclass="com.wm.util.Values">
-          <value name="field_largerEditor">false</value>
-          <value name="field_password">false</value>
-        </record>
         <value name="is_public">false</value>
         <value name="field_name">requestBody</value>
         <value name="field_type">record</value>
         <value name="field_is_jsonSchema">true</value>
         <value name="field_dim">0</value>
-        <value name="wrapper_type">IData</value>
         <array name="rec_fields" type="record" depth="1">
           <record javaclass="com.wm.util.Values">
             <value name="node_type">record</value>
@@ -966,8 +924,6 @@
               </record>
             </array>
             <value name="nillable">true</value>
-            <Boolean name="readOnly">false</Boolean>
-            <Boolean name="writeOnly">false</Boolean>
             <value name="modifiable">true</value>
             <value name="rec_ref">MessagingHub.v1.MessagingHubDescriptor_.docTypes:interface</value>
           </record>
@@ -1200,10 +1156,6 @@
   <COMMENT></COMMENT>
 
   <!-- nodes -->
-
-<MAP NAME="%lastError/service% == &#34;MessagingHub.v1.dbConnections.interfaceTable:createInterface&#34;" TIMEOUT="" MODE="STANDALONE" DISABLED="true">
-  <COMMENT>do nothing</COMMENT>
-</MAP>
 
 <INVOKE NAME="%lastError/service% != &#34;MessagingHub.v1.dbConnections.interfaceTable:createInterface&#34;" TIMEOUT="" SERVICE="MessagingHub.v1.dbConnections.interfaceTable:deleteInterfaceByEnv" VALIDATE-IN="$none" VALIDATE-OUT="$none">
   <COMMENT></COMMENT>

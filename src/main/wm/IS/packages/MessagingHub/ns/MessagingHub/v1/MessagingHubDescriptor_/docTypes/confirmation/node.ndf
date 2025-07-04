@@ -91,6 +91,6 @@
     <null name="schemaCompliant"/>
     <null name="elementWrapper"/>
     <null name="wrappedElement"/>
-    <value name="LOCK_REQUIRED">false</value>
+    <value name="UNLOCK_REQUIRED">true</value>
   </record>
 </Values>

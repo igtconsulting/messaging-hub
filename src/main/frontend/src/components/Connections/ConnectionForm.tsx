@@ -11,6 +11,7 @@ import {getServerConnections} from "../../services/apiService.ts";
 type NewConnectionFormProps = {
   submitForm: (formValue: Connection) => void;
   connection?: Connection | null;
+  isLoading?: boolean;
 };
 
 
@@ -18,6 +19,7 @@ type NewConnectionFormProps = {
 const ConnectionForm: React.FC<NewConnectionFormProps> = ({
   submitForm,
   connection,
+  isLoading = false,
 }) => {
   const connectionNameRef = useRef<HTMLInputElement>(null);
   // const isResourceNameRef = useRef<HTMLInputElement>(null);
@@ -141,7 +143,7 @@ const ConnectionForm: React.FC<NewConnectionFormProps> = ({
           ref={connectionTypeRef}
           name="connectionType"
           label="Connection type"
-          disabled={!!connection}
+          disabled={false}
           value={selectedConnectionType}
           error={error}
           onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -155,7 +157,7 @@ const ConnectionForm: React.FC<NewConnectionFormProps> = ({
         tooltip="Name of the connection in MessagingHub"
         ref={connectionNameRef}
         error={error}
-        disabled={connection ? true : false}
+        disabled={false}
         defaultValue={connection ? connection.connection_name : ""}
       />
       {isResourceNameOptions.length === 0 ? (
@@ -168,7 +170,7 @@ const ConnectionForm: React.FC<NewConnectionFormProps> = ({
               ref={isResourceNameRef}
               name="isResourceName"
               label="IS resource name"
-              disabled={connection ? true : !selectedConnectionType}
+              disabled={!selectedConnectionType}
               value={connection?.is_resource_name || ""}
               error={error}
               placeholder="Search IS resources..."
@@ -182,7 +184,7 @@ const ConnectionForm: React.FC<NewConnectionFormProps> = ({
         ref={prometheusUrlRef}
         error={error}
         optional
-        disabled={connection ? true : false}
+        disabled={false}
         defaultValue={connection ? connection.prometheus_url : ""}
       />
       <Input
@@ -192,7 +194,7 @@ const ConnectionForm: React.FC<NewConnectionFormProps> = ({
         tooltip="Used as namespace for topics and interfaces. Must be unique for each connection."
         ref={documentTypePrefixRef}
         error={error}
-        disabled={connection ? true : false}
+        disabled={false}
         defaultValue={connection ? connection.global_prefix : ""}
       />
       <div className="flex gap-2">
@@ -200,9 +202,10 @@ const ConnectionForm: React.FC<NewConnectionFormProps> = ({
           <Button text="Cancel" color="gray" type="button" />
         </Link>
         <Button
-          text={connection ? "Save changes" : "Create connection"}
+          text={isLoading ? "Processing..." : (connection ? "Save changes" : "Create connection")}
           type="submit"
           color="green"
+          disabled={isLoading}
         />
       </div>
     </form>

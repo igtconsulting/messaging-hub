@@ -57,11 +57,6 @@ import java.io.IOException;
 import com.pcbsys.nirvana.client.nChannel;
 import com.pcbsys.nirvana.client.nDurable;
 import com.pcbsys.nirvana.client.nSessionAttributes;
-import com.pcbsys.nirvana.nAdminAPI.nRealmNode;
-import com.pcbsys.nirvana.nAdminAPI.nLeafNode;
-import com.pcbsys.nirvana.nAdminAPI.nClusterNode;
-import com.pcbsys.nirvana.nAdminAPI.nClusterStatus;
-import com.pcbsys.nirvana.nAdminAPI.nClusterStatusEntry;
 import com.pcbsys.nirvana.nAdminAPI.*;
 import java.text.SimpleDateFormat;
 import java.text.DateFormat;
@@ -236,6 +231,61 @@ public final class javaServices
 		IDataCursor cursor = pipeline.getCursor();
 		IDataUtil.put(cursor, "sessionName", Service.getSession().getName());
 		cursor.destroy();
+		// --- <<IS-END>> ---
+
+                
+	}
+
+
+
+	public static final void getConnectionFromNode (IData pipeline)
+        throws ServiceException
+	{
+		// --- <<IS-START(getConnectionFromNode)>> ---
+		// @sigtype java 3.5
+		// [i] field:0:required nodePath
+		// [o] field:0:required aliasName
+		IDataCursor pipelineCursor = pipeline.getCursor();
+		String nodePath = IDataUtil.getString(pipelineCursor, "nodePath");
+		
+		String aliasName = null;
+		Namespace ns = Namespace.current();
+		NSName nsName = NSName.create(nodePath);
+		
+		if (ns.nodeExists(nsName)) {
+		    NSNode node = ns.getNode(nsName);
+		    if (node != null) {
+		        // Get the node content as an IData (pipeline)
+		        IData nodeData = node.getAsData();
+		        if (nodeData != null) {
+		            IDataCursor nodeCursor = nodeData.getCursor();
+		
+		            // Try eventDescription/aliasName first
+		            IData eventDesc = getIDataByKey(nodeCursor, "eventDescription");
+		            if (eventDesc != null) {
+		                IDataCursor edCursor = eventDesc.getCursor();
+		                aliasName = IDataUtil.getString(edCursor, "aliasName");
+		                edCursor.destroy();
+		            }
+		
+		            // If not found, try trigger/aliasName
+		            if (aliasName == null) {
+		                IData trigger = getIDataByKey(nodeCursor, "trigger");
+		                if (trigger != null) {
+		                    IDataCursor trCursor = trigger.getCursor();
+		                    aliasName = IDataUtil.getString(trCursor, "aliasName");
+		                    trCursor.destroy();
+		                }
+		            }
+		
+		            nodeCursor.destroy();
+		        }
+		    }
+		}
+		
+		// Put result into pipeline
+		IDataUtil.put(pipelineCursor, "aliasName", aliasName);
+		pipelineCursor.destroy();
 		// --- <<IS-END>> ---
 
                 
@@ -588,6 +638,40 @@ public final class javaServices
 
 
 
+	public static final void getPackageNameForTopicIfExists (IData pipeline)
+        throws ServiceException
+	{
+		// --- <<IS-START(getPackageNameForTopicIfExists)>> ---
+		// @sigtype java 3.5
+		// [i] field:0:required documentType
+		// [o] field:0:required packageName
+		// [o] field:0:required packageType
+		// [o] field:0:required exists
+		IDataCursor pipelineCursor = pipeline.getCursor();
+		String	documentType = IDataUtil.getString( pipelineCursor, "documentType");
+		
+		Namespace ns = Namespace.current();
+		NSName nsName = NSName.create(documentType);
+		
+		if (ns.nodeExists(nsName)){
+			IDataUtil.put( pipelineCursor, "exists", "true");
+			NSNode node = ns.getNode(nsName);
+			IDataUtil.put( pipelineCursor, "packageName", node.getPackage().getName());
+			IDataUtil.put( pipelineCursor, "packageType", node.getPackage().getPackageTypeString());
+		} else {
+			IDataUtil.put( pipelineCursor, "exists", "false");
+			IDataUtil.put( pipelineCursor, "packageName", null);
+			IDataUtil.put( pipelineCursor, "packageType", null);
+		}
+		
+		pipelineCursor.destroy();
+		// --- <<IS-END>> ---
+
+                
+	}
+
+
+
 	public static final void getTopicDetail (IData pipeline)
         throws ServiceException
 	{
@@ -624,6 +708,8 @@ public final class javaServices
 		
 		long totalPublished = found.getTotalPublished();
 		long totalConsumed = found.getTotalConsumed();
+		
+		
 		
 		IData intermediateDoc = IDataFactory.create();
 		IDataCursor intermediateCursor = intermediateDoc.getCursor();
@@ -773,6 +859,9 @@ public final class javaServices
 		Namespace ns = Namespace.current();
 		NSName nsName = NSName.create(documentType);
 		
+		NSNode node = ns.getNode(nsName);
+		IDataUtil.put( pipelineCursor, "PackageName", node.getPackage());
+		
 		if (ns.nodeExists(nsName)){
 			IDataUtil.put( pipelineCursor, "exists", "true");
 		} else {
@@ -847,8 +936,48 @@ public final class javaServices
                 
 	}
 
+
+
+	public static final void waitForSeconds (IData pipeline)
+        throws ServiceException
+	{
+		// --- <<IS-START(waitForSeconds)>> ---
+		// @sigtype java 3.5
+		// [i] field:0:required seconds
+		IDataCursor cursor = pipeline.getCursor();
+		    String secondsStr = IDataUtil.getString(cursor, "seconds");
+		    cursor.destroy();
+		    
+		    try {
+		        int seconds = Integer.parseInt(secondsStr);
+		        if (seconds < 0) {
+		            throw new ServiceException("Input 'seconds' must be non-negative.");
+		        }
+		
+		        // Wait
+		        Thread.sleep(seconds * 1000L); // Convert to milliseconds
+		    } catch (NumberFormatException e) {
+		        throw new ServiceException("Invalid input: 'seconds' must be an integer.");
+		    } catch (InterruptedException e) {
+		        Thread.currentThread().interrupt(); // Reset interrupt status
+		        throw new ServiceException("Thread was interrupted.");
+		    }
+		// --- <<IS-END>> ---
+
+                
+	}
+
 	// --- <<IS-START-SHARED>> ---
-	
+	private static IData getIDataByKey(IDataCursor cursor, String key) {
+	    IData value = null;
+	    if (cursor.first(key)) {
+	        Object obj = cursor.getValue();
+	        if (obj instanceof IData) {
+	            value = (IData) obj;
+	        }
+	    }
+	    return value;
+	}
 	
 	public static List<String> getChildList(NSNode baseNode){
 		

@@ -16,11 +16,18 @@ import java.util.List;
 import java.util.Set;
 import com.pcbsys.nirvana.client.nChannel;
 import com.pcbsys.nirvana.client.nDurable;
+import com.pcbsys.nirvana.client.nIllegalArgumentException;
+import com.pcbsys.nirvana.nAdmin.nAdminSession;
+import com.pcbsys.nirvana.nAdmin.nAdminSessionFactory;
+import com.pcbsys.nirvana.nAdminAPI.nRealmNode;
+import com.pcbsys.nirvana.nAdmin.events.*;
 import com.wm.app.b2b.server.dispatcher.DispatchFacade;
 import com.wm.app.b2b.server.dispatcher.trigger.Trigger;
 import com.wm.app.b2b.server.dispatcher.trigger.TriggerManager;
 import com.wm.app.b2b.server.dispatcher.wmmessaging.UMConnectionAlias;
 import com.wm.app.b2b.server.ns.Namespace;
+import com.pcbsys.nirvana.client.nSession;
+import com.pcbsys.nirvana.client.nSessionAttributes;
 // --- <<IS-END-IMPORTS>> ---
 
 public final class javaServices
@@ -307,6 +314,34 @@ public final class javaServices
 		IDataUtil.put(pipelineCursor, "triggerInfo", intermediateDoc);
 		pipelineCursor.destroy();
 			
+		// --- <<IS-END>> ---
+
+                
+	}
+
+
+
+	public static final void getTopicStatistics (IData pipeline)
+        throws ServiceException
+	{
+		// --- <<IS-START(getTopicStatistics)>> ---
+		// @sigtype java 3.5
+		String realmURL = "nsp://10.101.210.5:9000";  // your UM realm URL
+		String channelName = "picex2.topics:giveMeStats";            // your channel name
+		// Step 2: Create session attributes
+		nSessionAttributes attrs;
+		try {
+			attrs = new nSessionAttributes(realmURL);
+		
+		    // Step 3: Create an admin session using the factory
+		    nAdminSession adminSession = nAdminSessionFactory.createAdmin(attrs);
+		    //nRealm realm = adminSession.get;
+		    adminSession.close();
+		    
+		} catch (nIllegalArgumentException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		// --- <<IS-END>> ---
 
                 

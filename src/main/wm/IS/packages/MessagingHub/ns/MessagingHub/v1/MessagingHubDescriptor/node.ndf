@@ -27,6 +27,10 @@
   <array name="servers" type="record" depth="1">
     <record javaclass="com.wm.util.Values">
       <value name="description">This is a system generated server</value>
+      <value name="url">http://192.168.1.111:5555/rad/MessagingHub.v1:MessagingHubDescriptor</value>
+    </record>
+    <record javaclass="com.wm.util.Values">
+      <value name="description">This is a system generated server</value>
       <value name="url">http://IGT-NTB-027.igtconsulting.eu:5555/rad/MessagingHub.v1:MessagingHubDescriptor</value>
     </record>
     <record javaclass="com.wm.util.Values">

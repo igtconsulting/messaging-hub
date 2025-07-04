@@ -39,6 +39,7 @@ const EditTopic = () => {
 
     // console.log(newTopic, connection, name)
     try {
+      // Use original connection from URL as parameter, new connection is in body
       await updateTopic(newTopic, connection, name);
       navigate("/topics");
       addAlert("Topic updated successfully", "success");

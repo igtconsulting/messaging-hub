@@ -88,7 +88,7 @@ public final class topics
 		String jsonSchema = IDataUtil.getString( pipelineCursor, "jsonSchema" );
 		String umAliasName = IDataUtil.getString( pipelineCursor, "umAliasName");
 		//String isPublishable = IDataUtil.getString( pipelineCursor, "isPublishable" );
-		
+		 
 		if(!documentType.contains(":")) {
 			throw new ServiceException("Supplied documentType path '"+documentType+"' is not valid path to document.");
 		} 
@@ -205,7 +205,6 @@ public final class topics
 		
 		
 		pipelineCursor.destroy();
-			
 		// --- <<IS-END>> ---
 
                 
@@ -667,7 +666,10 @@ public final class topics
 			umPath = "/" + umPath.replace("::", "/");
 			
 			nChannel channel = umAlias.lookupChannel(umPath);
+			//////////
 			
+			//IDataUtil.put( pipelineCursor, "deleteThis", channel.getDurableManager().get(umPath).);
+			/////////
 			nDurable[] durables = channel.getDurableManager().getAll();
 			
 			int durableCount = durables.length;
@@ -1132,8 +1134,12 @@ public final class topics
 		Boolean allowNull = false;
 		Boolean allowUnspecifiedFields = true;
 		
-		if(requiredFieldsList.contains(new JsonPrimitive(name))){
-			required = true;
+	//		if(requiredFieldsList.contains(new JsonPrimitive(name))){
+	//			required = true;
+	//		}
+		
+		if (requiredFieldsList != null && requiredFieldsList.contains(new JsonPrimitive(name))) {
+		    required = true;
 		}
 	
 		List<String> typeList = new ArrayList<String>();

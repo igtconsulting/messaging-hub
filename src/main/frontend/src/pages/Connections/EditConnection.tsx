@@ -14,6 +14,7 @@ const EditConnection = () => {
   const { name } = useParams<{ name: string }>();
   const [connection, setConnection] = useState<Connection | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   useEffect(() => {
     async function getConnectionDetails() {
@@ -38,6 +39,7 @@ const EditConnection = () => {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       await updateConnection(name, editedConnection);
       navigate("/connections");
@@ -47,6 +49,8 @@ const EditConnection = () => {
         "There was a problem updating the connection. Try again later",
         "error"
       );
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -71,6 +75,7 @@ const EditConnection = () => {
               <ConnectionForm
                 submitForm={onEditConnection}
                 connection={connection}
+                isLoading={isSubmitting}
               />
             )}
           </Card>

@@ -1840,9 +1840,6 @@
 
   <!-- nodes -->
 
-<MAPDELETE FIELD="/lastError;4;0;pub.event:exceptionInfo">
-</MAPDELETE>
-
 <MAPDELETE FIELD="/responseCode;1;0">
 </MAPDELETE>
 </MAP>

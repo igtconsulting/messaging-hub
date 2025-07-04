@@ -3,15 +3,17 @@ import BreadCrumbs from "../../layouts/Breadcrumbs";
 import ConnectionForm from "../../components/Connections/ConnectionForm";
 import { useNavigate } from "react-router-dom";
 import { Connection } from "../../types";
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { AlertContext } from "../../contextapi/AlertContext";
 import { createConnection } from "../../services/apiService";
 
 const NewConnection = () => {
   const navigate = useNavigate();
   const { addAlert } = useContext(AlertContext);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   async function onCreateConnection(newConnection: Connection) {
+    setIsSubmitting(true);
     try {
       await createConnection(newConnection);
       navigate("/connections");
@@ -21,6 +23,8 @@ const NewConnection = () => {
         "There was a problem creating the connection. Try again later",
         "error"
       );
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -41,7 +45,7 @@ const NewConnection = () => {
 
         <div className="mt-6">
           <Card>
-            <ConnectionForm submitForm={onCreateConnection} />
+            <ConnectionForm submitForm={onCreateConnection} isLoading={isSubmitting} />
           </Card>
         </div>
       </div>

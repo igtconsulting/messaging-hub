@@ -11,6 +11,8 @@ info:
     url: https://www.gnu.org/licenses/agpl.txt
   version: 1.0.0
 servers:
+- url: http://IGT-NTB-027.igtconsulting.eu:5555/rad/MessagingHub.v1:MessagingHubDescriptor
+  description: This is a system generated server
 - url: http://IGT-NTB-002.igtconsulting.eu:5555/rad/MessagingHub.v1:MessagingHubDescriptor
   description: This is a system generated server
 - url: http://igtunix2.igtconsulting.eu:5555/messaging
@@ -1909,6 +1911,8 @@ components:
         packageName:
           type: string
         schema:
+          type: string
+        connectionName:
           type: string
         connectionType:
           type: string

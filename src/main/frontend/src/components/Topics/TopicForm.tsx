@@ -100,6 +100,7 @@ const TopicForm: React.FC<TopicFormProps> = ({
         packageName: selectedPackageName,
         topicName: topicName,
         schema: stringifiedJsonSchema.replace(/\\/g, ""),
+        connectionName: selectedConnectionName,
       };
 
       await submitForm(formValues, selectedConnectionName);
@@ -158,7 +159,6 @@ const TopicForm: React.FC<TopicFormProps> = ({
         error={error}
         value={topicName}
         onChange={(e) => setTopicName(e.target.value)}
-        disabled={topic ? true : false}
       />
       <SearchableSelect
         options={formattedPackageData}
@@ -166,7 +166,6 @@ const TopicForm: React.FC<TopicFormProps> = ({
         label="Package"
         value={selectedPackageName}
         onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedPackageName(e.target.value)}
-        disabled={topic ? true : false}
         error={error}
         placeholder="Search packages..."
       />
@@ -176,7 +175,6 @@ const TopicForm: React.FC<TopicFormProps> = ({
         label="Connection"
         value={selectedConnectionName}
         onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedConnectionName(e.target.value)}
-        disabled={topic ? true : false}
         error={error}
         placeholder="Search connections..."
       />

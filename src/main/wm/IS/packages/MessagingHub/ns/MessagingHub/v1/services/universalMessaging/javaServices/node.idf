@@ -25,10 +25,17 @@ YXkubGVuZ3RoLCBuZXdTaXplKSk7CiAgICByZXR1cm4gbmV3QXJyYXk7Cn0=</value>
     <value>java.util.Set</value>
     <value>com.pcbsys.nirvana.client.nChannel</value>
     <value>com.pcbsys.nirvana.client.nDurable</value>
+    <value>com.pcbsys.nirvana.client.nIllegalArgumentException</value>
+    <value>com.pcbsys.nirvana.nAdmin.nAdminSession</value>
+    <value>com.pcbsys.nirvana.nAdmin.nAdminSessionFactory</value>
+    <value>com.pcbsys.nirvana.nAdminAPI.nRealmNode</value>
+    <value>com.pcbsys.nirvana.nAdmin.events.*</value>
     <value>com.wm.app.b2b.server.dispatcher.DispatchFacade</value>
     <value>com.wm.app.b2b.server.dispatcher.trigger.Trigger</value>
     <value>com.wm.app.b2b.server.dispatcher.trigger.TriggerManager</value>
     <value>com.wm.app.b2b.server.dispatcher.wmmessaging.UMConnectionAlias</value>
     <value>com.wm.app.b2b.server.ns.Namespace</value>
+    <value>com.pcbsys.nirvana.client.nSession</value>
+    <value>com.pcbsys.nirvana.client.nSessionAttributes</value>
   </array>
 </Values>

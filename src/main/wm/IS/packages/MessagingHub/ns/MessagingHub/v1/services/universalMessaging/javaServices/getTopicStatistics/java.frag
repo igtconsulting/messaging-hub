@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Values version="2.0">
+  <value name="name">getTopicStatistics</value>
+  <value name="encodeutf8">true</value>
+  <value name="body">U3RyaW5nIHJlYWxtVVJMID0gIm5zcDovLzEwLjEwMS4yMTAuNTo5MDAwIjsgIC8vIHlvdXIgVU0g
+cmVhbG0gVVJMDQpTdHJpbmcgY2hhbm5lbE5hbWUgPSAicGljZXgyLnRvcGljczpnaXZlTWVTdGF0
+cyI7ICAgICAgICAgICAgLy8geW91ciBjaGFubmVsIG5hbWUNCi8vIFN0ZXAgMjogQ3JlYXRlIHNl
+c3Npb24gYXR0cmlidXRlcw0KblNlc3Npb25BdHRyaWJ1dGVzIGF0dHJzOw0KdHJ5IHsNCglhdHRy
+cyA9IG5ldyBuU2Vzc2lvbkF0dHJpYnV0ZXMocmVhbG1VUkwpOw0KDQogICAgLy8gU3RlcCAzOiBD
+cmVhdGUgYW4gYWRtaW4gc2Vzc2lvbiB1c2luZyB0aGUgZmFjdG9yeQ0KICAgIG5BZG1pblNlc3Np
+b24gYWRtaW5TZXNzaW9uID0gbkFkbWluU2Vzc2lvbkZhY3RvcnkuY3JlYXRlQWRtaW4oYXR0cnMp
+Ow0KICAgIC8vblJlYWxtIHJlYWxtID0gYWRtaW5TZXNzaW9uLmdldDsNCiAgICBhZG1pblNlc3Np
+b24uY2xvc2UoKTsNCiAgICANCn0gY2F0Y2ggKG5JbGxlZ2FsQXJndW1lbnRFeGNlcHRpb24gZSkg
+ew0KCS8vIFRPRE8gQXV0by1nZW5lcmF0ZWQgY2F0Y2ggYmxvY2sNCgllLnByaW50U3RhY2tUcmFj
+ZSgpOw0KfQ==</value>
+</Values>

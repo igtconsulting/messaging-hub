@@ -1472,6 +1472,11 @@
 </INVOKE>
 </SEQUENCE>
 
+<SEQUENCE TIMEOUT="" EXIT-ON="FAILURE">
+  <COMMENT>delete topic</COMMENT>
+
+  <!-- nodes -->
+
 <BRANCH TIMEOUT="" SWITCH="/getConnectionOutput/results[0]/CONNECTION_TYPE">
   <COMMENT></COMMENT>
 
@@ -2735,6 +2740,7 @@
   <COMMENT>do nothing</COMMENT>
 </MAP>
 </BRANCH>
+</SEQUENCE>
 
 <INVOKE TIMEOUT="" SERVICE="pub.flow:setResponseCode" VALIDATE-IN="$none" VALIDATE-OUT="$none">
   <COMMENT></COMMENT>
