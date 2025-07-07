@@ -19,6 +19,10 @@ export const validateValueError = (value: string | undefined | null, validators:
                 isError = isNoSpaceError(value);
                 if (isError) return isError;
                 break;
+            case "validPrefix":
+                isError = isValidPrefixError(value);
+                if (isError) return isError;
+                break;
             default:
                 console.log("Invalid validation value")
         }
@@ -37,4 +41,18 @@ function isUrlError(value: string) {
 
 function isNoSpaceError(value: string) {
     return /\s/.test(value) ? "This field cannot contain spaces." : null;
+}
+
+function isValidPrefixError(value: string) {
+    // Check if starts with a number
+    if (/^\d/.test(value)) {
+        return "Document type prefix cannot start with a number.";
+    }
+    
+    // Check for special characters (only allow alphanumeric and underscores)
+    if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(value)) {
+        return "Document type prefix can only contain letters, numbers, and underscores. Must start with a letter.";
+    }
+    
+    return null;
 }

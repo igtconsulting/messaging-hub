@@ -917,7 +917,7 @@ const FilterBuilder = forwardRef<FilterBuilderRef, FilterBuilderProps>(({
       </div>
       {/* Field Name with Popup Picker */}
       <div className="flex flex-col min-w-[180px]">
-        <label className="text-xs font-medium text-gray-700 mb-1 h-4">Field</label>
+        <label className="text-xs font-medium text-gray-700 mb-1">Field</label>
         {schema ? (
           <div className="flex gap-2 h-10">
             <div className="flex-1 p-2 bg-white border border-gray-300 rounded text-sm min-w-[120px] h-10 flex items-center">
@@ -939,6 +939,8 @@ const FilterBuilder = forwardRef<FilterBuilderRef, FilterBuilderProps>(({
             onChange={(e) => handleFieldChange(condition.id, e.target.value)}
             label=""
             disabled={disabled}
+            schemeSize={true}
+            wrapperClassName="mb-0"
             placeholder="Enter field name"
             className="min-w-[180px] h-10"
           />
@@ -947,7 +949,7 @@ const FilterBuilder = forwardRef<FilterBuilderRef, FilterBuilderProps>(({
 
       {/* Field Type - Read-only, determined by schema */}
       <div className="flex flex-col min-w-[80px]">
-        <label className="text-xs font-medium text-gray-700 mb-1 h-4">Type</label>
+        <label className="text-xs font-medium text-gray-700 mb-1">Type</label>
         <div className="min-w-[80px] h-10 px-2 py-2 bg-gray-100 border border-gray-300 rounded text-xs text-gray-700 text-center flex items-center justify-center">
           {condition.fieldType}
         </div>
@@ -955,39 +957,44 @@ const FilterBuilder = forwardRef<FilterBuilderRef, FilterBuilderProps>(({
       
       {/* Operator */}
       <div className="flex flex-col min-w-[100px]">
-        <label className="text-xs font-medium text-gray-700 mb-1 h-4">Operator</label>
+        <label className="text-xs font-medium text-gray-700 mb-1">
+          Operator
+          <span className="text-red ml-1">*</span>
+        </label>
         <div className="h-10">
-          <Select
-            options={operatorOptions}
+          <select
             value={condition.operator}
             onChange={(e) => updateCondition(condition.id, { operator: e.target.value })}
-            label=""
             disabled={disabled}
-            className="min-w-[100px] h-10"
-            style={{ lineHeight: '1.2', paddingTop: '2px', paddingBottom: '2px' }}
-          />
+            className="min-w-[100px] h-10 w-full font-roboto border border-gray rounded px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue cursor-pointer"
+          >
+            {operatorOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
       
       {/* Value */}
       <div className="flex flex-col min-w-[140px] flex-1">
-        <label className="text-xs font-medium text-gray-700 mb-1 h-4">
+        <label className="text-xs font-medium text-gray-700 mb-1">
           Value {condition.fieldType && `(${condition.fieldType})`}
+          <span className="text-red ml-1">*</span>
         </label>
         <div className="h-10">
           {condition.fieldType === 'boolean' ? (
-            <Select
-              options={[
-                { label: 'Select value...', value: '' },
-                { label: 'true', value: 'true' },
-                { label: 'false', value: 'false' }
-              ]}
+            <select
               value={condition.value}
               onChange={(e) => updateCondition(condition.id, { value: e.target.value })}
-              label=""
               disabled={disabled}
-              className="min-w-[100px] h-10"
-            />
+              className="min-w-[100px] h-10 w-full font-roboto border border-gray rounded px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue cursor-pointer"
+            >
+              <option value="">Select value...</option>
+              <option value="true">true</option>
+              <option value="false">false</option>
+            </select>
           ) : condition.fieldType === 'integer' ? (
             <Input
               type="number"
@@ -1000,6 +1007,8 @@ const FilterBuilder = forwardRef<FilterBuilderRef, FilterBuilderProps>(({
               }}
               label=""
               disabled={disabled}
+              schemeSize={true}
+              wrapperClassName="mb-0"
               className="min-w-[100px] h-10"
               placeholder="Enter integer..."
             />
@@ -1010,6 +1019,8 @@ const FilterBuilder = forwardRef<FilterBuilderRef, FilterBuilderProps>(({
               onChange={(e) => updateCondition(condition.id, { value: e.target.value })}
               label=""
               disabled={disabled}
+              schemeSize={true}
+              wrapperClassName="mb-0"
               className="min-w-[140px] h-10"
               placeholder="Enter text value..."
             />
@@ -1020,6 +1031,8 @@ const FilterBuilder = forwardRef<FilterBuilderRef, FilterBuilderProps>(({
               onChange={(e) => updateCondition(condition.id, { value: e.target.value })}
               label=""
               disabled={disabled}
+              schemeSize={true}
+              wrapperClassName="mb-0"
               className="min-w-[140px] h-10"
               placeholder="Enter value..."
             />
@@ -1035,7 +1048,7 @@ const FilterBuilder = forwardRef<FilterBuilderRef, FilterBuilderProps>(({
       
       {/* Delete Button */}
       <div className="flex flex-col">
-        <label className="text-xs text-transparent mb-1 h-4">Delete</label>
+        <label className="text-xs text-transparent mb-1">Delete</label>
         <div className="h-10">
           <Button
             type="button"
@@ -1642,14 +1655,18 @@ const FilterBuilder = forwardRef<FilterBuilderRef, FilterBuilderProps>(({
                   const operator = conditionOperators[prevElement.id] || 'AND';
                   return (
                     <div className="flex items-center gap-2">
-                      <Select
-                        options={logicalOperators}
+                      <select
                         value={operator}
                         onChange={(e) => updateConditionOperator(prevElement.id, e.target.value as 'AND' | 'OR')}
-                        label=""
                         disabled={disabled}
-                        className="min-w-[80px]"
-                      />
+                        className="min-w-[80px] w-full font-roboto border border-gray rounded px-2 py-2 focus:outline-none focus:ring-2 focus:ring-blue cursor-pointer"
+                      >
+                        {logicalOperators.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                   );
                 })()}

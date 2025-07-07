@@ -3,6 +3,7 @@ import { validateValueError } from "../../services/formValidations";
 import { Connection, InputErrorProps, Package, Topic, TreeNode } from "../../types";
 import Input from "../General/Form/Input";
 import SearchableSelect from "../General/Form/SearchableSelect";
+import Select from "../General/Form/Select";
 import { Link } from "react-router-dom";
 import Button from "../General/Button";
 import { getConnections, getPackages } from "../../services/apiService";
@@ -28,6 +29,7 @@ const TopicForm: React.FC<TopicFormProps> = ({
   const [selectedConnectionName, setSelectedConnectionName] = useState<string>(
     connectionName ?? ""
   );
+  const [selectedConnectionType, setSelectedConnectionType] = useState<string>("");
   const [error, setError] = useState<null | InputErrorProps>(null);
   const [packageData, setPackageData] = useState<
     Package[]
@@ -61,8 +63,24 @@ const TopicForm: React.FC<TopicFormProps> = ({
       try {
         const data: Connection[] = await getConnections();
         setConnectionData(data);
-        if ((!topic && data.length > 0) && !connectionName) {
-          setSelectedConnectionName(data[0].connection_name);
+        
+        // If editing a topic, set the connection type from the current connection
+        if (topic && connectionName) {
+          const currentConn = data.find(conn => conn.connection_name === connectionName);
+          if (currentConn) {
+            setSelectedConnectionType(currentConn.connection_type);
+          }
+        } else if (!topic && data.length > 0) {
+          // When creating new topic, default to first available connection type
+          const availableTypes = [...new Set(data.map(conn => conn.connection_type))];
+          if (availableTypes.length > 0) {
+            setSelectedConnectionType(availableTypes[0]);
+            // Set first connection of that type as default
+            const firstConnOfType = data.find(conn => conn.connection_type === availableTypes[0]);
+            if (firstConnOfType && !connectionName) {
+              setSelectedConnectionName(firstConnOfType.connection_name);
+            }
+          }
         }
       } catch (error) {
         addAlert(
@@ -123,6 +141,13 @@ const TopicForm: React.FC<TopicFormProps> = ({
     if (validationError)
       return { inputName: inputName, errorMessage: validationError };
 
+    inputValue = selectedConnectionType;
+    inputName = "connectionType";
+
+    validationError = validateValueError(inputValue, ["required"]);
+    if (validationError)
+      return { inputName: inputName, errorMessage: validationError };
+
     inputValue = selectedConnectionName;
     inputName = "connectionName";
 
@@ -134,8 +159,35 @@ const TopicForm: React.FC<TopicFormProps> = ({
   }
 
   const formattedConnectionData = useMemo(() => {
-    return formatConnectionDataForSelect(connectionData)
-  }, [connectionData])
+    // Filter connections based on selected connection type
+    if (selectedConnectionType) {
+      const filteredConnections = connectionData.filter(conn =>
+        conn.connection_type === selectedConnectionType
+      );
+      return formatConnectionDataForSelect(filteredConnections);
+    }
+    return [];
+  }, [connectionData, selectedConnectionType])
+
+  // Available connection types
+  const connectionTypeOptions = useMemo(() => {
+    const types = [...new Set(connectionData.map(conn => conn.connection_type))];
+    return types.map(type => ({ label: type, value: type }));
+  }, [connectionData]);
+
+  // Handle connection type change
+  const handleConnectionTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newType = e.target.value;
+    setSelectedConnectionType(newType);
+    
+    // Reset selected connection and pick first available of new type
+    const connectionsOfType = connectionData.filter(conn => conn.connection_type === newType);
+    if (connectionsOfType.length > 0) {
+      setSelectedConnectionName(connectionsOfType[0].connection_name);
+    } else {
+      setSelectedConnectionName("");
+    }
+  };
 
   const formattedPackageData = useMemo(() => {
     return packageData.map(({ name }) => ({
@@ -144,7 +196,7 @@ const TopicForm: React.FC<TopicFormProps> = ({
     }));
   }, [packageData])
 
-  const isKafkaConn = connectionData.find(el => el.connection_name == selectedConnectionName)?.connection_type == "KAFKA"
+  const isKafkaConn = selectedConnectionType === "KAFKA"
   const initialSchemeData = useMemo(() => {
     return topic?.schema ? JSON.parse(topic.schema) : []
   }, [topic])
@@ -169,6 +221,26 @@ const TopicForm: React.FC<TopicFormProps> = ({
         error={error}
         placeholder="Search packages..."
       />
+      {topic ? (
+        <Input
+          type="text"
+          label="Connection Type"
+          name="connectionType"
+          value={selectedConnectionType}
+          disabled={true}
+          tooltip="Connection type cannot be changed when editing a topic"
+        />
+      ) : (
+        <SearchableSelect
+          options={connectionTypeOptions}
+          name="connectionType"
+          label="Connection Type"
+          value={selectedConnectionType}
+          onChange={handleConnectionTypeChange}
+          error={error}
+          placeholder="Select connection type..."
+        />
+      )}
       <SearchableSelect
         options={formattedConnectionData}
         name="connectionName"

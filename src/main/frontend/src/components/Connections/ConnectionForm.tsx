@@ -124,7 +124,7 @@ const ConnectionForm: React.FC<NewConnectionFormProps> = ({
     inputValue = documentTypePrefixRef.current?.value;
     inputName = documentTypePrefixRef.current?.name;
 
-    validationError = validateValueError(inputValue, ["required"]);
+    validationError = validateValueError(inputValue, ["required", "validPrefix"]);
     if (validationError)
       return { inputName: inputName, errorMessage: validationError };
 
